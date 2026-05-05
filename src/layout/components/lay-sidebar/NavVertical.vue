@@ -1,3 +1,47 @@
+<template>
+  <div
+    v-loading="loading"
+    :class="['sidebar-container', showLogo ? 'has-logo' : 'no-logo']"
+    @mouseenter.prevent="isShow = true"
+    @mouseleave.prevent="isShow = false"
+  >
+    <LaySidebarLogo v-if="showLogo" :collapse="isCollapse" />
+    <el-scrollbar
+      wrap-class="scrollbar-wrapper"
+      :class="[device === 'mobile' ? 'mobile' : 'pc']"
+    >
+      <el-menu
+        unique-opened
+        mode="vertical"
+        popper-class="pure-scrollbar"
+        class="outer-most select-none"
+        :collapse="isCollapse"
+        :collapse-transition="false"
+        :popper-effect="tooltipEffect"
+        :default-active="defaultActive"
+      >
+        <LaySidebarItem
+          v-for="routes in menuData"
+          :key="routes.path"
+          :item="routes"
+          :base-path="routes.path"
+          class="outer-most select-none"
+        />
+      </el-menu>
+    </el-scrollbar>
+    <LaySidebarCenterCollapse
+      v-if="device !== 'mobile' && (isShow || isCollapse)"
+      :is-active="pureApp.sidebar.opened"
+      @toggleClick="toggleSideBar"
+    />
+    <LaySidebarLeftCollapse
+      v-if="device !== 'mobile'"
+      :is-active="pureApp.sidebar.opened"
+      @toggleClick="toggleSideBar"
+    />
+  </div>
+</template>
+
 <script setup lang="ts">
 import { useRoute } from "vue-router";
 import { emitter } from "@/utils/mitt";
@@ -85,50 +129,6 @@ onBeforeUnmount(() => {
   emitter.off("logoChange");
 });
 </script>
-
-<template>
-  <div
-    v-loading="loading"
-    :class="['sidebar-container', showLogo ? 'has-logo' : 'no-logo']"
-    @mouseenter.prevent="isShow = true"
-    @mouseleave.prevent="isShow = false"
-  >
-    <LaySidebarLogo v-if="showLogo" :collapse="isCollapse" />
-    <el-scrollbar
-      wrap-class="scrollbar-wrapper"
-      :class="[device === 'mobile' ? 'mobile' : 'pc']"
-    >
-      <el-menu
-        unique-opened
-        mode="vertical"
-        popper-class="pure-scrollbar"
-        class="outer-most select-none"
-        :collapse="isCollapse"
-        :collapse-transition="false"
-        :popper-effect="tooltipEffect"
-        :default-active="defaultActive"
-      >
-        <LaySidebarItem
-          v-for="routes in menuData"
-          :key="routes.path"
-          :item="routes"
-          :base-path="routes.path"
-          class="outer-most select-none"
-        />
-      </el-menu>
-    </el-scrollbar>
-    <LaySidebarCenterCollapse
-      v-if="device !== 'mobile' && (isShow || isCollapse)"
-      :is-active="pureApp.sidebar.opened"
-      @toggleClick="toggleSideBar"
-    />
-    <LaySidebarLeftCollapse
-      v-if="device !== 'mobile'"
-      :is-active="pureApp.sidebar.opened"
-      @toggleClick="toggleSideBar"
-    />
-  </div>
-</template>
 
 <style scoped>
 :deep(.el-loading-mask) {

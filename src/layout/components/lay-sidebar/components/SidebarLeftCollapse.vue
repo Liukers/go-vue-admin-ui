@@ -1,3 +1,20 @@
+<template>
+  <div class="left-collapse">
+    <IconifyIconOffline
+      v-tippy="{
+        content: isActive ? '点击折叠' : '点击展开',
+        theme: tooltipEffect,
+        hideOnClick: 'toggle',
+        placement: 'right'
+      }"
+      :icon="MenuFold"
+      :class="[iconClass, themeColor === 'light' ? '' : 'text-primary']"
+      :style="{ transform: isActive ? 'none' : 'rotateY(180deg)' }"
+      @click="toggleClick"
+    />
+  </div>
+</template>
+
 <script setup lang="ts">
 import { computed } from "vue";
 import { useGlobal } from "@pureadmin/utils";
@@ -39,23 +56,6 @@ const toggleClick = () => {
   emit("toggleClick");
 };
 </script>
-
-<template>
-  <div class="left-collapse">
-    <IconifyIconOffline
-      v-tippy="{
-        content: isActive ? '点击折叠' : '点击展开',
-        theme: tooltipEffect,
-        hideOnClick: 'toggle',
-        placement: 'right'
-      }"
-      :icon="MenuFold"
-      :class="[iconClass, themeColor === 'light' ? '' : 'text-primary']"
-      :style="{ transform: isActive ? 'none' : 'rotateY(180deg)' }"
-      @click="toggleClick"
-    />
-  </div>
-</template>
 
 <style lang="scss" scoped>
 .left-collapse {

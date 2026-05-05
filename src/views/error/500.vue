@@ -1,14 +1,3 @@
-<script setup lang="ts">
-import { useRouter } from "vue-router";
-import noServer from "@/assets/status/500.svg?component";
-
-defineOptions({
-  name: "Error500"
-});
-
-const router = useRouter();
-</script>
-
 <template>
   <div
     class="flex flex-col md:flex-row justify-center items-center min-h-full w-full p-4 md:p-0"
@@ -71,6 +60,17 @@ const router = useRouter();
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { useRouter } from "vue-router";
+import noServer from "@/assets/status/500.svg?component";
+
+defineOptions({
+  name: "Error500"
+});
+
+const router = useRouter();
+</script>
 
 <style scoped>
 .main-content {

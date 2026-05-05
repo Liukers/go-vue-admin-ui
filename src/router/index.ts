@@ -47,32 +47,32 @@ const modules: Record<string, any> = import.meta.glob(
   }
 );
 
-/** 原始静态路由（未做任何处理） */
+// 原始静态路由（未做任何处理）
 const routes = [];
 
 Object.keys(modules).forEach(key => {
   routes.push(modules[key].default);
 });
 
-/** 导出处理后的静态路由（三级及以上的路由全部拍成二级） */
+// 导出处理后的静态路由（三级及以上的路由全部拍成二级）
 export const constantRoutes: Array<RouteRecordRaw> = formatTwoStageRoutes(
   formatFlatteningRoutes(buildHierarchyTree(ascending(routes.flat(Infinity))))
 );
 
-/** 初始的静态路由，用于退出登录时重置路由 */
+// 初始的静态路由，用于退出登录时重置路由
 const initConstantRoutes: Array<RouteRecordRaw> = cloneDeep(constantRoutes);
 
-/** 用于渲染菜单，保持原始层级 */
+// 用于渲染菜单，保持原始层级
 export const constantMenus: Array<RouteComponent> = ascending(
   routes.flat(Infinity)
 ).concat(...remainingRouter);
 
-/** 不参与菜单的路由 */
+// 不参与菜单的路由
 export const remainingPaths = Object.keys(remainingRouter).map(v => {
   return remainingRouter[v].path;
 });
 
-/** 创建路由实例 */
+// 创建路由实例
 export const router: Router = createRouter({
   history: getHistoryMode(import.meta.env.VITE_ROUTER_HISTORY),
   routes: constantRoutes.concat(...(remainingRouter as any)),
@@ -80,27 +80,29 @@ export const router: Router = createRouter({
   scrollBehavior(to, from, savedPosition) {
     return new Promise(resolve => {
       if (savedPosition) {
-        return savedPosition;
+        resolve(savedPosition);
       } else {
         if (from.meta.saveSrollTop) {
           const top: number =
             document.documentElement.scrollTop || document.body.scrollTop;
           resolve({ left: 0, top });
+        } else {
+          resolve({ left: 0, top: 0 });
         }
       }
     });
   }
 });
 
-/** 记录已经加载的页面路径 */
+// 记录已经加载的页面路径
 const loadedPaths = new Set<string>();
 
-/** 重置已加载页面记录 */
+// 重置已加载页面记录
 export function resetLoadedPaths() {
   loadedPaths.clear();
 }
 
-/** 重置路由 */
+// 重置路由
 export function resetRouter() {
   router.clearRoutes();
   for (const route of initConstantRoutes.concat(...(remainingRouter as any))) {
@@ -113,7 +115,7 @@ export function resetRouter() {
   resetLoadedPaths();
 }
 
-/** 路由白名单 */
+// 路由白名单
 const whiteList = ["/login"];
 
 const { VITE_HIDE_HOME } = import.meta.env;
@@ -142,7 +144,7 @@ router.beforeEach((to: ToRouteType, _from, next) => {
       else document.title = item.meta.title as string;
     });
   }
-  /** 如果已经登录并存在登录信息后不能跳转到路由白名单，而是继续保持在当前页面 */
+  // 如果已经登录并存在登录信息后不能跳转到路由白名单，而是继续保持在当前页面
   function toCorrectRoute() {
     whiteList.includes(to.fullPath) ? next(_from.fullPath) : next();
   }

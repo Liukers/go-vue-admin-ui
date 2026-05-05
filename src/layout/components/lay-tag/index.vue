@@ -1,3 +1,124 @@
+<template>
+  <div v-if="!showTags" ref="containerDom" class="tags-view">
+    <span v-show="isShowArrow" class="arrow-left">
+      <IconifyIconOffline :icon="ArrowLeftSLine" @click="handleScroll(200)" />
+    </span>
+    <div
+      ref="scrollbarDom"
+      class="scroll-container"
+      :class="showModel === 'chrome' && 'chrome-scroll-container'"
+      @wheel.prevent="handleWheel"
+    >
+      <div ref="tabDom" class="tab select-none" :style="getTabStyle">
+        <div
+          v-for="(item, index) in multiTags"
+          :ref="'dynamic' + index"
+          :key="index"
+          :class="[
+            'scroll-item is-closable',
+            linkIsActive(item),
+            showModel === 'chrome' && 'chrome-item',
+            isFixedTag(item) && 'fixed-tag'
+          ]"
+          @contextmenu.prevent="openMenu(item, $event)"
+          @mouseenter.prevent="onMouseenter(index)"
+          @mouseleave.prevent="onMouseleave(index)"
+          @click="tagOnClick(item)"
+        >
+          <template v-if="showModel !== 'chrome'">
+            <span
+              class="tag-title dark:text-text_color_primary! dark:hover:text-primary!"
+            >
+              {{ item.meta.title }}
+            </span>
+            <span
+              v-if="
+                isFixedTag(item)
+                  ? false
+                  : iconIsActive(item, index) ||
+                    (index === activeIndex && index !== 0)
+              "
+              class="el-icon-close"
+              @click.stop="deleteMenu(item)"
+            >
+              <IconifyIconOffline :icon="Close" />
+            </span>
+            <span
+              v-if="showModel !== 'card'"
+              :ref="'schedule' + index"
+              :class="[scheduleIsActive(item)]"
+            />
+          </template>
+          <div v-else class="chrome-tab">
+            <div class="chrome-tab__bg">
+              <TagChrome />
+            </div>
+            <span class="tag-title">
+              {{ item.meta.title }}
+            </span>
+            <span
+              v-if="isFixedTag(item) ? false : index !== 0"
+              class="chrome-close-btn"
+              @click.stop="deleteMenu(item)"
+            >
+              <IconifyIconOffline :icon="Close" />
+            </span>
+            <span class="chrome-tab-divider" />
+          </div>
+        </div>
+      </div>
+    </div>
+    <span v-show="isShowArrow" class="arrow-right">
+      <IconifyIconOffline :icon="ArrowRightSLine" @click="handleScroll(-200)" />
+    </span>
+    <!-- 右键菜单按钮 -->
+    <transition name="el-zoom-in-top">
+      <ul
+        v-show="visible"
+        ref="contextmenuRef"
+        :key="Math.random()"
+        :style="getContextMenuStyle"
+        class="contextmenu"
+      >
+        <div
+          v-for="(item, key) in tagsViews.slice(0, 6)"
+          :key="key"
+          style="display: flex; align-items: center"
+        >
+          <li v-if="item.show" @click="selectTag(key, item)">
+            <IconifyIconOffline :icon="item.icon" />
+            {{ item.text }}
+          </li>
+        </div>
+      </ul>
+    </transition>
+    <!-- 右侧功能按钮 -->
+    <el-dropdown
+      trigger="click"
+      placement="bottom-end"
+      @command="handleCommand"
+    >
+      <span class="arrow-down">
+        <IconifyIconOffline :icon="ArrowDown" class="dark:text-white" />
+      </span>
+      <template #dropdown>
+        <el-dropdown-menu>
+          <el-dropdown-item
+            v-for="(item, key) in tagsViews"
+            :key="key"
+            :command="{ key, item }"
+            :divided="item.divided"
+            :disabled="item.disabled"
+          >
+            <IconifyIconOffline :icon="item.icon" />
+            {{ item.text }}
+          </el-dropdown-item>
+        </el-dropdown-menu>
+      </template>
+    </el-dropdown>
+  </div>
+</template>
+
 <script setup lang="ts">
 import { emitter } from "@/utils/mitt";
 import NProgress from "@/utils/progress";
@@ -203,7 +324,7 @@ function dynamicRouteTag(value: string): void {
   concatPath(router.options.routes as any, value);
 }
 
-/** 刷新路由 */
+// 刷新路由
 function onFresh() {
   NProgress.start();
   const { fullPath, query } = unref(route);
@@ -363,7 +484,7 @@ function handleCommand(command: any) {
   onClickDrop(key, item);
 }
 
-/** 触发右键中菜单的点击事件 */
+// 触发右键中菜单的点击事件
 function selectTag(key, item) {
   closeMenu();
   onClickDrop(key, item, currentSelect.value);
@@ -385,7 +506,7 @@ function disabledMenus(value: boolean, fixedTag = false) {
   }
 }
 
-/** 检查当前右键的菜单两边是否存在别的菜单，如果左侧的菜单是顶级菜单，则不显示关闭左侧标签页，如果右侧没有菜单，则不显示关闭右侧标签页 */
+// 检查当前右键的菜单两边是否存在别的菜单，如果左侧的菜单是顶级菜单，则不显示关闭左侧标签页，如果右侧没有菜单，则不显示关闭右侧标签页
 function showMenuModel(
   currentPath: string,
   query: object = {},
@@ -495,7 +616,7 @@ function openMenu(tag, e) {
   });
 }
 
-/** 触发tags标签切换 */
+// 触发tags标签切换
 function tagOnClick(item) {
   const { name, path } = item;
   if (name) {
@@ -563,127 +684,6 @@ onBeforeUnmount(() => {
   emitter.off("changLayoutRoute");
 });
 </script>
-
-<template>
-  <div v-if="!showTags" ref="containerDom" class="tags-view">
-    <span v-show="isShowArrow" class="arrow-left">
-      <IconifyIconOffline :icon="ArrowLeftSLine" @click="handleScroll(200)" />
-    </span>
-    <div
-      ref="scrollbarDom"
-      class="scroll-container"
-      :class="showModel === 'chrome' && 'chrome-scroll-container'"
-      @wheel.prevent="handleWheel"
-    >
-      <div ref="tabDom" class="tab select-none" :style="getTabStyle">
-        <div
-          v-for="(item, index) in multiTags"
-          :ref="'dynamic' + index"
-          :key="index"
-          :class="[
-            'scroll-item is-closable',
-            linkIsActive(item),
-            showModel === 'chrome' && 'chrome-item',
-            isFixedTag(item) && 'fixed-tag'
-          ]"
-          @contextmenu.prevent="openMenu(item, $event)"
-          @mouseenter.prevent="onMouseenter(index)"
-          @mouseleave.prevent="onMouseleave(index)"
-          @click="tagOnClick(item)"
-        >
-          <template v-if="showModel !== 'chrome'">
-            <span
-              class="tag-title dark:text-text_color_primary! dark:hover:text-primary!"
-            >
-              {{ item.meta.title }}
-            </span>
-            <span
-              v-if="
-                isFixedTag(item)
-                  ? false
-                  : iconIsActive(item, index) ||
-                    (index === activeIndex && index !== 0)
-              "
-              class="el-icon-close"
-              @click.stop="deleteMenu(item)"
-            >
-              <IconifyIconOffline :icon="Close" />
-            </span>
-            <span
-              v-if="showModel !== 'card'"
-              :ref="'schedule' + index"
-              :class="[scheduleIsActive(item)]"
-            />
-          </template>
-          <div v-else class="chrome-tab">
-            <div class="chrome-tab__bg">
-              <TagChrome />
-            </div>
-            <span class="tag-title">
-              {{ item.meta.title }}
-            </span>
-            <span
-              v-if="isFixedTag(item) ? false : index !== 0"
-              class="chrome-close-btn"
-              @click.stop="deleteMenu(item)"
-            >
-              <IconifyIconOffline :icon="Close" />
-            </span>
-            <span class="chrome-tab-divider" />
-          </div>
-        </div>
-      </div>
-    </div>
-    <span v-show="isShowArrow" class="arrow-right">
-      <IconifyIconOffline :icon="ArrowRightSLine" @click="handleScroll(-200)" />
-    </span>
-    <!-- 右键菜单按钮 -->
-    <transition name="el-zoom-in-top">
-      <ul
-        v-show="visible"
-        ref="contextmenuRef"
-        :key="Math.random()"
-        :style="getContextMenuStyle"
-        class="contextmenu"
-      >
-        <div
-          v-for="(item, key) in tagsViews.slice(0, 6)"
-          :key="key"
-          style="display: flex; align-items: center"
-        >
-          <li v-if="item.show" @click="selectTag(key, item)">
-            <IconifyIconOffline :icon="item.icon" />
-            {{ item.text }}
-          </li>
-        </div>
-      </ul>
-    </transition>
-    <!-- 右侧功能按钮 -->
-    <el-dropdown
-      trigger="click"
-      placement="bottom-end"
-      @command="handleCommand"
-    >
-      <span class="arrow-down">
-        <IconifyIconOffline :icon="ArrowDown" class="dark:text-white" />
-      </span>
-      <template #dropdown>
-        <el-dropdown-menu>
-          <el-dropdown-item
-            v-for="(item, key) in tagsViews"
-            :key="key"
-            :command="{ key, item }"
-            :divided="item.divided"
-            :disabled="item.disabled"
-          >
-            <IconifyIconOffline :icon="item.icon" />
-            {{ item.text }}
-          </el-dropdown-item>
-        </el-dropdown-menu>
-      </template>
-    </el-dropdown>
-  </div>
-</template>
 
 <style lang="scss" scoped>
 @import url("./index.scss");

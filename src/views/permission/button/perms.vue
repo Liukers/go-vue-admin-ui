@@ -1,14 +1,3 @@
-<script setup lang="ts">
-import { hasPerms } from "@/utils/auth";
-import { useUserStoreHook } from "@/store/modules/user";
-
-const { permissions } = useUserStoreHook();
-
-defineOptions({
-  name: "PermissionButtonLogin"
-});
-</script>
-
 <template>
   <div>
     <p class="mb-2!">当前拥有的code列表：{{ permissions }}</p>
@@ -107,3 +96,14 @@ defineOptions({
     </el-card>
   </div>
 </template>
+
+<script setup lang="ts">
+import { hasPerms } from "@/utils/auth";
+import { useUserStoreHook } from "@/store/modules/user";
+
+const { permissions } = useUserStoreHook();
+
+defineOptions({
+  name: "PermissionButtonLogin"
+});
+</script>

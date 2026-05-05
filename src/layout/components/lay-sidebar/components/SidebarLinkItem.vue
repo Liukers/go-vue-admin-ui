@@ -1,3 +1,12 @@
+<template>
+  <component
+    :is="isExternalLink ? 'a' : 'router-link'"
+    v-bind="getLinkProps(to)"
+  >
+    <slot />
+  </component>
+</template>
+
 <script setup lang="ts">
 import { computed } from "vue";
 import { isUrl } from "@pureadmin/utils";
@@ -21,12 +30,3 @@ const getLinkProps = (item: menuType) => {
   };
 };
 </script>
-
-<template>
-  <component
-    :is="isExternalLink ? 'a' : 'router-link'"
-    v-bind="getLinkProps(to)"
-  >
-    <slot />
-  </component>
-</template>

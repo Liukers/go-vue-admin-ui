@@ -29,6 +29,8 @@ export type UserInfo = {
   status: number;
   roleId: number;
   role?: RoleInfo;
+  roles?: string[];
+  perms?: string[];
   lastLoginIp: string;
   lastLoginAt: string;
   createdAt: string;
@@ -43,10 +45,23 @@ export type LoginResult = {
 };
 
 // 登录
-export const login = (data: { username: string; password: string }) => {
+export const login = (data: {
+  username: string;
+  password: string;
+  captchaId: string;
+  captchaCode: string;
+}) => {
   return http.request<Result<LoginResult>>("post", "/v1/system/login", {
     data
   });
+};
+
+// 获取验证码
+export const getCaptcha = () => {
+  return http.request<Result<{ captchaId: string; captchaImg: string }>>(
+    "get",
+    "/v1/system/captcha"
+  );
 };
 
 // 登出

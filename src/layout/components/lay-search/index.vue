@@ -1,13 +1,3 @@
-<script setup lang="ts">
-import { useBoolean } from "../../hooks/useBoolean";
-import SearchModal from "./components/SearchModal.vue";
-
-const { bool: show, toggle } = useBoolean();
-function handleSearch() {
-  toggle();
-}
-</script>
-
 <template>
   <div>
     <div
@@ -19,3 +9,13 @@ function handleSearch() {
     <SearchModal v-model:value="show" />
   </div>
 </template>
+
+<script setup lang="ts">
+import { useBoolean } from "../../hooks/useBoolean";
+import SearchModal from "./components/SearchModal.vue";
+
+const { bool: show, toggle } = useBoolean();
+function handleSearch() {
+  toggle();
+}
+</script>

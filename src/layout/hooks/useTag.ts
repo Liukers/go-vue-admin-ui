@@ -43,13 +43,13 @@ export function useTags() {
   const currentSelect = ref({});
   const isScrolling = ref(false);
 
-  /** 显示模式，默认灵动模式 */
+  // 显示模式，默认灵动模式
   const showModel = ref(
     storageLocal().getItem<StorageConfigs>(
       `${responsiveStorageNameSpace()}configure`
     )?.showModel || "smart"
   );
-  /** 是否隐藏标签页，默认显示 */
+  // 是否隐藏标签页，默认显示
   const showTags =
     ref(
       storageLocal().getItem<StorageConfigs>(
@@ -171,7 +171,7 @@ export function useTags() {
     visible.value = false;
   };
 
-  /** 鼠标移入添加激活样式 */
+  // 鼠标移入添加激活样式
   function onMouseenter(index) {
     if (index) activeIndex.value = index;
     if (unref(showModel) === "smart") {
@@ -186,7 +186,7 @@ export function useTags() {
     }
   }
 
-  /** 鼠标移出恢复默认样式 */
+  // 鼠标移出恢复默认样式
   function onMouseleave(index) {
     activeIndex.value = -1;
     if (unref(showModel) === "smart") {

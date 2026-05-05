@@ -3,21 +3,21 @@ import { useUserStoreHook } from "@/store/modules/user";
 import { storageLocal, isString, isIncludeAllChildren } from "@pureadmin/utils";
 
 export interface DataInfo<T> {
-  /** token */
+  // token
   accessToken: string;
-  /** `accessToken`的过期时间（时间戳） */
+  // `accessToken`的过期时间（时间戳）
   expires: T;
-  /** 用于调用刷新accessToken的接口时所需的token */
+  // 用于调用刷新accessToken的接口时所需的token
   refreshToken: string;
-  /** 头像 */
+  // 头像
   avatar?: string;
-  /** 用户名 */
+  // 用户名
   username?: string;
-  /** 昵称 */
+  // 昵称
   nickname?: string;
-  /** 当前登录用户的角色 */
+  // 当前登录用户的角色
   roles?: Array<string>;
-  /** 当前登录用户的按钮级别权限 */
+  // 当前登录用户的按钮级别权限
   permissions?: Array<string>;
 }
 
@@ -31,12 +31,20 @@ export const TOKEN_KEY = "authorized-token";
  * */
 export const multipleTabsKey = "multiple-tabs";
 
-/** 获取`token` */
-export function getToken(): DataInfo<number> {
+// 获取`token`
+export function getToken(): DataInfo<number> | null {
   // 此处与`TOKEN_KEY`相同，此写法解决初始化时`Cookies`中不存在`TOKEN_KEY`报错
-  return Cookies.get(TOKEN_KEY)
-    ? JSON.parse(Cookies.get(TOKEN_KEY))
-    : storageLocal().getItem(USER_KEY);
+  try {
+    const cookieValue = Cookies.get(TOKEN_KEY);
+    if (cookieValue) {
+      return JSON.parse(cookieValue);
+    }
+    return storageLocal().getItem(USER_KEY);
+  } catch (e) {
+    console.error("Token 解析失败，请重新登录", e);
+    removeToken();
+    return null;
+  }
 }
 
 /**
@@ -45,11 +53,11 @@ export function getToken(): DataInfo<number> {
  * 将`accessToken`、`expires`、`refreshToken`这三条信息放在key值为authorized-token的cookie里（过期自动销毁）
  * 将`avatar`、`username`、`nickname`、`roles`、`permissions`、`refreshToken`、`expires`这七条信息放在key值为`user-info`的localStorage里（利用`multipleTabsKey`当浏览器完全关闭后自动销毁）
  */
-export function setToken(data: DataInfo<Date>) {
+export function setToken(data: DataInfo<number>) {
   let expires = 0;
   const { accessToken, refreshToken } = data;
   const { isRemembered, loginDay } = useUserStoreHook();
-  expires = new Date(data.expires).getTime(); // 如果后端直接设置时间戳，将此处代码改为expires = data.expires，然后把上面的DataInfo<Date>改成DataInfo<number>即可
+  expires = data.expires;
   const cookieString = JSON.stringify({ accessToken, expires, refreshToken });
 
   expires > 0
@@ -115,19 +123,19 @@ export function setToken(data: DataInfo<Date>) {
   }
 }
 
-/** 删除`token`以及key值为`user-info`的localStorage信息 */
+// 删除`token`以及key值为`user-info`的localStorage信息
 export function removeToken() {
   Cookies.remove(TOKEN_KEY);
   Cookies.remove(multipleTabsKey);
   storageLocal().removeItem(USER_KEY);
 }
 
-/** 格式化token（jwt格式） */
+// 格式化token（jwt格式）
 export const formatToken = (token: string): string => {
   return "Bearer " + token;
 };
 
-/** 是否有按钮级别的权限（根据登录接口返回的`permissions`字段进行判断）*/
+// 是否有按钮级别的权限（根据登录接口返回的`permissions`字段进行判断）
 export const hasPerms = (value: string | Array<string>): boolean => {
   if (!value) return false;
   const allPerms = "*:*:*";

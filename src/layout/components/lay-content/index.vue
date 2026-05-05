@@ -1,3 +1,90 @@
+<template>
+  <section
+    :class="[fixedHeader ? 'app-main' : 'app-main-nofixed-header']"
+    :style="getSectionStyle"
+  >
+    <router-view>
+      <template #default="{ Component, route }">
+        <LayFrame :currComp="Component" :currRoute="route">
+          <template #default="{ Comp, fullPath, frameInfo }">
+            <el-scrollbar
+              v-if="fixedHeader"
+              :wrap-style="{
+                display: 'flex',
+                'flex-wrap': 'wrap',
+                'max-width': getMainWidth,
+                margin: '0 auto',
+                transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)'
+              }"
+              :view-style="{
+                display: 'flex',
+                flex: 'auto',
+                overflow: 'hidden',
+                'flex-direction': 'column'
+              }"
+            >
+              <el-backtop
+                title="回到顶部"
+                target=".app-main .el-scrollbar__wrap"
+              >
+                <BackTopIcon />
+              </el-backtop>
+              <div class="grow">
+                <transitionMain :route="route">
+                  <keep-alive
+                    v-if="isKeepAlive"
+                    :include="usePermissionStoreHook().cachePageList"
+                  >
+                    <component
+                      :is="Comp"
+                      :key="fullPath"
+                      :frameInfo="frameInfo"
+                      class="main-content"
+                    />
+                  </keep-alive>
+                  <component
+                    :is="Comp"
+                    v-else
+                    :key="fullPath"
+                    :frameInfo="frameInfo"
+                    class="main-content"
+                  />
+                </transitionMain>
+              </div>
+              <LayFooter v-if="!hideFooter" />
+            </el-scrollbar>
+            <div v-else class="grow">
+              <transitionMain :route="route">
+                <keep-alive
+                  v-if="isKeepAlive"
+                  :include="usePermissionStoreHook().cachePageList"
+                >
+                  <component
+                    :is="Comp"
+                    :key="fullPath"
+                    :frameInfo="frameInfo"
+                    class="main-content"
+                  />
+                </keep-alive>
+                <component
+                  :is="Comp"
+                  v-else
+                  :key="fullPath"
+                  :frameInfo="frameInfo"
+                  class="main-content"
+                />
+              </transitionMain>
+            </div>
+          </template>
+        </LayFrame>
+      </template>
+    </router-view>
+
+    <!-- 页脚 -->
+    <LayFooter v-if="!hideFooter && !fixedHeader" />
+  </section>
+</template>
+
 <script setup lang="ts">
 import LayFrame from "../lay-frame/index.vue";
 import LayFooter from "../lay-footer/index.vue";
@@ -104,93 +191,6 @@ const transitionMain = defineComponent({
   }
 });
 </script>
-
-<template>
-  <section
-    :class="[fixedHeader ? 'app-main' : 'app-main-nofixed-header']"
-    :style="getSectionStyle"
-  >
-    <router-view>
-      <template #default="{ Component, route }">
-        <LayFrame :currComp="Component" :currRoute="route">
-          <template #default="{ Comp, fullPath, frameInfo }">
-            <el-scrollbar
-              v-if="fixedHeader"
-              :wrap-style="{
-                display: 'flex',
-                'flex-wrap': 'wrap',
-                'max-width': getMainWidth,
-                margin: '0 auto',
-                transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)'
-              }"
-              :view-style="{
-                display: 'flex',
-                flex: 'auto',
-                overflow: 'hidden',
-                'flex-direction': 'column'
-              }"
-            >
-              <el-backtop
-                title="回到顶部"
-                target=".app-main .el-scrollbar__wrap"
-              >
-                <BackTopIcon />
-              </el-backtop>
-              <div class="grow">
-                <transitionMain :route="route">
-                  <keep-alive
-                    v-if="isKeepAlive"
-                    :include="usePermissionStoreHook().cachePageList"
-                  >
-                    <component
-                      :is="Comp"
-                      :key="fullPath"
-                      :frameInfo="frameInfo"
-                      class="main-content"
-                    />
-                  </keep-alive>
-                  <component
-                    :is="Comp"
-                    v-else
-                    :key="fullPath"
-                    :frameInfo="frameInfo"
-                    class="main-content"
-                  />
-                </transitionMain>
-              </div>
-              <LayFooter v-if="!hideFooter" />
-            </el-scrollbar>
-            <div v-else class="grow">
-              <transitionMain :route="route">
-                <keep-alive
-                  v-if="isKeepAlive"
-                  :include="usePermissionStoreHook().cachePageList"
-                >
-                  <component
-                    :is="Comp"
-                    :key="fullPath"
-                    :frameInfo="frameInfo"
-                    class="main-content"
-                  />
-                </keep-alive>
-                <component
-                  :is="Comp"
-                  v-else
-                  :key="fullPath"
-                  :frameInfo="frameInfo"
-                  class="main-content"
-                />
-              </transitionMain>
-            </div>
-          </template>
-        </LayFrame>
-      </template>
-    </router-view>
-
-    <!-- 页脚 -->
-    <LayFooter v-if="!hideFooter && !fixedHeader" />
-  </section>
-</template>
 
 <style scoped>
 .app-main {

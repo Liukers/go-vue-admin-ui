@@ -1,3 +1,9 @@
+<template>
+  <div v-loading="loading" class="frame" element-loading-text="加载中...">
+    <iframe ref="frameRef" :src="frameSrc" class="frame-iframe" />
+  </div>
+</template>
+
 <script setup lang="ts">
 import { useRoute } from "vue-router";
 import { ref, unref, watch, onMounted, nextTick } from "vue";
@@ -83,12 +89,6 @@ onMounted(() => {
   init();
 });
 </script>
-
-<template>
-  <div v-loading="loading" class="frame" element-loading-text="加载中...">
-    <iframe ref="frameRef" :src="frameSrc" class="frame-iframe" />
-  </div>
-</template>
 
 <style lang="scss" scoped>
 .frame {

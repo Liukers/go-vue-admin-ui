@@ -21,7 +21,7 @@ export function useNav() {
   const routers = useRouter().options.routes;
   const { isFullscreen, toggle } = useFullscreen();
   const { wholeMenus } = storeToRefs(usePermissionStoreHook());
-  /** 平台`layout`中所有`el-tooltip`的`effect`配置，默认`light` */
+  // 平台`layout`中所有`el-tooltip`的`effect`配置，默认`light`
   const tooltipEffect = getConfig()?.TooltipEffect ?? "light";
 
   const getDivStyle = computed((): CSSProperties => {
@@ -34,14 +34,14 @@ export function useNav() {
     };
   });
 
-  /** 头像图片 URL（如果头像为空则使用文字头像） */
+  // 头像图片 URL（如果头像为空则使用文字头像）
   const userAvatar = computed(() => {
     return isAllEmpty(useUserStoreHook()?.avatar)
       ? Avatar
       : useUserStoreHook()?.avatar;
   });
 
-  /** 头像文本（显示昵称第一个字或用户名首字母大写） */
+  // 头像文本（显示昵称第一个字或用户名首字母大写）
   const userAvatarText = computed(() => {
     const nickname = useUserStoreHook()?.nickname;
     const username = useUserStoreHook()?.username;
@@ -56,7 +56,7 @@ export function useNav() {
     return nameStr.charAt(0).toUpperCase();
   });
 
-  /** 头像背景色（基于用户名生成固定颜色） */
+  // 头像背景色（基于用户名生成固定颜色）
   const userAvatarBgColor = computed(() => {
     const username = useUserStoreHook()?.username || "";
     const colors = [
@@ -76,12 +76,12 @@ export function useNav() {
     return colors[Math.abs(hash) % colors.length];
   });
 
-  /** 是否显示图片头像（用户上传了头像图片时显示） */
+  // 是否显示图片头像（用户上传了头像图片时显示）
   const showAvatarImage = computed(() => {
     return !isAllEmpty(useUserStoreHook()?.avatar);
   });
 
-  /** 昵称（如果昵称为空则显示用户名） */
+  // 昵称（如果昵称为空则显示用户名）
   const username = computed(() => {
     return isAllEmpty(useUserStoreHook()?.nickname)
       ? useUserStoreHook()?.username
@@ -109,14 +109,14 @@ export function useNav() {
     return $config.Title;
   });
 
-  /** 动态title */
+  // 动态title
   function changeTitle(meta: routeMetaType) {
     const Title = getConfig().Title;
     if (Title) document.title = `${meta.title} | ${Title}`;
     else document.title = meta.title;
   }
 
-  /** 退出登录 */
+  // 退出登录
   function logout() {
     useUserStoreHook().logOut();
   }
@@ -153,12 +153,12 @@ export function useNav() {
     emitter.emit("changLayoutRoute", indexPath);
   }
 
-  /** 判断路径是否参与菜单 */
+  // 判断路径是否参与菜单
   function isRemaining(path: string) {
     return remainingPaths.includes(path);
   }
 
-  /** 获取`logo` */
+  // 获取`logo`
   function getLogo() {
     return new URL("/logo.svg", import.meta.url).href;
   }

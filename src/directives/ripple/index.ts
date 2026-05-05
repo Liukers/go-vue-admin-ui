@@ -3,9 +3,9 @@ import { isObject } from "@pureadmin/utils";
 import type { Directive, DirectiveBinding } from "vue";
 
 export interface RippleOptions {
-  /** 自定义`ripple`颜色，支持`tailwindcss` */
+  // 自定义`ripple`颜色，支持`tailwindcss`
   class?: string;
-  /** 是否从中心扩散 */
+  // 是否从中心扩散
   center?: boolean;
   circle?: boolean;
 }

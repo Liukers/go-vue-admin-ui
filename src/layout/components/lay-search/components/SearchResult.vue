@@ -1,3 +1,23 @@
+<template>
+  <div ref="resultRef" class="result">
+    <div
+      v-for="(item, index) in options"
+      :key="item.path"
+      :ref="'resultItemRef' + index"
+      class="result-item dark:bg-[#1d1d1d]"
+      :style="itemStyle(item)"
+      @click="handleTo"
+      @mouseenter="handleMouse(item)"
+    >
+      <component :is="useRenderIcon(item.meta?.icon)" />
+      <span class="result-item-title">
+        {{ item.meta?.title }}
+      </span>
+      <EnterOutlined />
+    </div>
+  </div>
+</template>
+
 <script setup lang="ts">
 import type { Props } from "../types";
 import { useResizeObserver } from "@pureadmin/utils";
@@ -37,7 +57,7 @@ const active = computed({
   }
 });
 
-/** 鼠标移入 */
+// 鼠标移入
 async function handleMouse(item) {
   active.value = item.path;
 }
@@ -67,26 +87,6 @@ onMounted(() => {
 
 defineExpose({ handleScroll });
 </script>
-
-<template>
-  <div ref="resultRef" class="result">
-    <div
-      v-for="(item, index) in options"
-      :key="item.path"
-      :ref="'resultItemRef' + index"
-      class="result-item dark:bg-[#1d1d1d]"
-      :style="itemStyle(item)"
-      @click="handleTo"
-      @mouseenter="handleMouse(item)"
-    >
-      <component :is="useRenderIcon(item.meta?.icon)" />
-      <span class="result-item-title">
-        {{ item.meta?.title }}
-      </span>
-      <EnterOutlined />
-    </div>
-  </div>
-</template>
 
 <style lang="scss" scoped>
 .result {

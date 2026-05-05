@@ -1,3 +1,17 @@
+<template>
+  <el-text
+    v-bind="{
+      truncated: !lineClamp,
+      lineClamp,
+      ...$attrs
+    }"
+    ref="textRef"
+    @mouseover.self="handleHover"
+  >
+    <slot />
+  </el-text>
+</template>
+
 <script setup lang="ts">
 import { h, onMounted, ref } from "vue";
 import { type TippyOptions, type TippyContent, useTippy } from "vue-tippy";
@@ -53,17 +67,3 @@ onMounted(() => {
   tippyFunc.value = useTippy(textRef.value?.$el, getTippyProps());
 });
 </script>
-
-<template>
-  <el-text
-    v-bind="{
-      truncated: !lineClamp,
-      lineClamp,
-      ...$attrs
-    }"
-    ref="textRef"
-    @mouseover.self="handleHover"
-  >
-    <slot />
-  </el-text>
-</template>

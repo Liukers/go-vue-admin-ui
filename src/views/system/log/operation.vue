@@ -1,3 +1,193 @@
+<template>
+  <div class="main">
+    <el-card shadow="never">
+      <template #header>
+        <div class="card-header">
+          <span class="font-medium">操作日志</span>
+          <div class="search-area">
+            <el-form :inline="true" :model="searchForm" class="search-form">
+              <el-form-item label="用户名">
+                <el-input
+                  v-model="searchForm.username"
+                  placeholder="请输入用户名"
+                  clearable
+                  style="width: 140px"
+                />
+              </el-form-item>
+              <el-form-item label="状态">
+                <el-select
+                  v-model="searchForm.status"
+                  placeholder="请选择状态"
+                  clearable
+                  style="width: 110px"
+                >
+                  <el-option label="成功" :value="1" />
+                  <el-option label="失败" :value="2" />
+                </el-select>
+              </el-form-item>
+              <el-form-item label="开始时间">
+                <el-date-picker
+                  v-model="searchForm.startTime"
+                  type="date"
+                  placeholder="选择开始时间"
+                  value-format="YYYY-MM-DD"
+                  style="width: 135px"
+                />
+              </el-form-item>
+              <el-form-item label="结束时间">
+                <el-date-picker
+                  v-model="searchForm.endTime"
+                  type="date"
+                  placeholder="选择结束时间"
+                  value-format="YYYY-MM-DD"
+                  style="width: 135px"
+                />
+              </el-form-item>
+              <el-form-item>
+                <el-button type="primary" @click="handleSearch">搜索</el-button>
+                <el-button @click="handleReset">重置</el-button>
+              </el-form-item>
+            </el-form>
+            <el-button type="danger" @click="handleClear">清空日志</el-button>
+          </div>
+        </div>
+      </template>
+
+      <!-- 数据表格 -->
+      <el-table v-loading="loading" :data="dataList" border stripe row-key="id">
+        <el-table-column
+          v-for="col in columns"
+          :key="col.prop"
+          :prop="col.prop"
+          :label="col.label"
+          :width="col.width"
+          :min-width="col.minWidth"
+          :fixed="col.fixed"
+        >
+          <template #default="{ row }">
+            <template v-if="col.slot === 'status'">
+              <el-tag :type="row.status === 1 ? 'success' : 'danger'">
+                {{ row.status === 1 ? "成功" : "失败" }}
+              </el-tag>
+            </template>
+            <template v-else-if="col.slot === 'operation'">
+              <div class="operation-buttons">
+                <el-button
+                  link
+                  type="primary"
+                  :icon="useRenderIcon(Eye)"
+                  @click="handleViewDetail(row)"
+                >
+                  详情
+                </el-button>
+                <el-button
+                  link
+                  type="danger"
+                  :icon="useRenderIcon(Delete)"
+                  @click="handleDelete(row)"
+                >
+                  删除
+                </el-button>
+              </div>
+            </template>
+            <template v-else>
+              {{ row[col.prop] || "-" }}
+            </template>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <!-- 分页 -->
+      <div class="pagination-container">
+        <el-pagination
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :page-sizes="[20, 50, 100]"
+          :total="total"
+          layout="total, sizes, prev, pager, next, jumper"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+        />
+      </div>
+
+      <!-- 详情弹窗 -->
+      <el-dialog
+        v-model="detailVisible"
+        title="操作日志详情"
+        width="750px"
+        destroy-on-close
+        :close-on-click-modal="false"
+        class="log-detail-dialog"
+        align-center
+      >
+        <el-descriptions
+          v-if="currentDetail"
+          :column="2"
+          border
+          class="log-descriptions"
+        >
+          <el-descriptions-item label="ID">{{
+            currentDetail.id
+          }}</el-descriptions-item>
+          <el-descriptions-item label="用户名">{{
+            currentDetail.username
+          }}</el-descriptions-item>
+          <el-descriptions-item label="角色">{{
+            currentDetail.roleName
+          }}</el-descriptions-item>
+          <el-descriptions-item label="请求方法">
+            <el-tag
+              :type="getMethodType(currentDetail.method)"
+              size="small"
+              effect="light"
+              class="method-tag"
+            >
+              {{ currentDetail.method }}
+            </el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="请求路径" :span="2">
+            <div class="text-wrap">{{ currentDetail.path }}</div>
+          </el-descriptions-item>
+          <el-descriptions-item label="状态">
+            <el-tag :type="currentDetail.status === 1 ? 'success' : 'danger'">
+              {{ currentDetail.status === 1 ? "成功" : "失败" }}
+            </el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="IP地址">{{
+            currentDetail.ip
+          }}</el-descriptions-item>
+          <el-descriptions-item label="耗时(ms)">{{
+            currentDetail.operationTime
+          }}</el-descriptions-item>
+          <el-descriptions-item label="操作时间">{{
+            currentDetail.createdAt
+          }}</el-descriptions-item>
+          <el-descriptions-item label="请求数据" :span="2">
+            <pre
+              class="json-content"
+            ><code class="json-code">{{ formatJson(currentDetail.requestData) }}</code></pre>
+          </el-descriptions-item>
+          <el-descriptions-item label="响应数据" :span="2">
+            <pre
+              class="json-content"
+            ><code class="json-code">{{ formatJson(currentDetail.responseData) }}</code></pre>
+          </el-descriptions-item>
+          <el-descriptions-item
+            v-if="currentDetail.errorMessage"
+            label="错误信息"
+            :span="2"
+          >
+            <span class="error-text">{{ currentDetail.errorMessage }}</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="User-Agent" :span="2">
+            <div class="text-wrap">{{ currentDetail.userAgent || "-" }}</div>
+          </el-descriptions-item>
+        </el-descriptions>
+      </el-dialog>
+    </el-card>
+  </div>
+</template>
+
 <script setup lang="ts">
 import { ref, reactive, onMounted } from "vue";
 import { message } from "@/utils/message";
@@ -213,8 +403,13 @@ const highlightJson = (json: string): string => {
 };
 
 // 获取请求方法的标签类型
-const getMethodType = (method: string): string => {
-  const typeMap: Record<string, string> = {
+const getMethodType = (
+  method: string
+): "primary" | "success" | "warning" | "danger" | "info" => {
+  const typeMap: Record<
+    string,
+    "primary" | "success" | "warning" | "danger" | "info"
+  > = {
     GET: "success",
     POST: "primary",
     PUT: "warning",
@@ -228,196 +423,6 @@ onMounted(() => {
   fetchData();
 });
 </script>
-
-<template>
-  <div class="main">
-    <el-card shadow="never">
-      <template #header>
-        <div class="card-header">
-          <span class="font-medium">操作日志</span>
-          <div class="search-area">
-            <el-form :inline="true" :model="searchForm" class="search-form">
-              <el-form-item label="用户名">
-                <el-input
-                  v-model="searchForm.username"
-                  placeholder="请输入用户名"
-                  clearable
-                  style="width: 140px"
-                />
-              </el-form-item>
-              <el-form-item label="状态">
-                <el-select
-                  v-model="searchForm.status"
-                  placeholder="请选择状态"
-                  clearable
-                  style="width: 110px"
-                >
-                  <el-option label="成功" :value="1" />
-                  <el-option label="失败" :value="2" />
-                </el-select>
-              </el-form-item>
-              <el-form-item label="开始时间">
-                <el-date-picker
-                  v-model="searchForm.startTime"
-                  type="date"
-                  placeholder="选择开始时间"
-                  value-format="YYYY-MM-DD"
-                  style="width: 135px"
-                />
-              </el-form-item>
-              <el-form-item label="结束时间">
-                <el-date-picker
-                  v-model="searchForm.endTime"
-                  type="date"
-                  placeholder="选择结束时间"
-                  value-format="YYYY-MM-DD"
-                  style="width: 135px"
-                />
-              </el-form-item>
-              <el-form-item>
-                <el-button type="primary" @click="handleSearch">搜索</el-button>
-                <el-button @click="handleReset">重置</el-button>
-              </el-form-item>
-            </el-form>
-            <el-button type="danger" @click="handleClear">清空日志</el-button>
-          </div>
-        </div>
-      </template>
-
-      <!-- 数据表格 -->
-      <el-table v-loading="loading" :data="dataList" border stripe row-key="id">
-        <el-table-column
-          v-for="col in columns"
-          :key="col.prop"
-          :prop="col.prop"
-          :label="col.label"
-          :width="col.width"
-          :min-width="col.minWidth"
-          :fixed="col.fixed"
-        >
-          <template #default="{ row }">
-            <template v-if="col.slot === 'status'">
-              <el-tag :type="row.status === 1 ? 'success' : 'danger'">
-                {{ row.status === 1 ? "成功" : "失败" }}
-              </el-tag>
-            </template>
-            <template v-else-if="col.slot === 'operation'">
-              <div class="operation-buttons">
-                <el-button
-                  link
-                  type="primary"
-                  :icon="useRenderIcon(Eye)"
-                  @click="handleViewDetail(row)"
-                >
-                  详情
-                </el-button>
-                <el-button
-                  link
-                  type="danger"
-                  :icon="useRenderIcon(Delete)"
-                  @click="handleDelete(row)"
-                >
-                  删除
-                </el-button>
-              </div>
-            </template>
-            <template v-else>
-              {{ row[col.prop] || "-" }}
-            </template>
-          </template>
-        </el-table-column>
-      </el-table>
-
-      <!-- 分页 -->
-      <div class="pagination-container">
-        <el-pagination
-          v-model:current-page="currentPage"
-          v-model:page-size="pageSize"
-          :page-sizes="[20, 50, 100]"
-          :total="total"
-          layout="total, sizes, prev, pager, next, jumper"
-          @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
-        />
-      </div>
-
-      <!-- 详情弹窗 -->
-      <el-dialog
-        v-model="detailVisible"
-        title="操作日志详情"
-        width="750px"
-        destroy-on-close
-        :close-on-click-modal="false"
-        class="log-detail-dialog"
-        align-center
-      >
-        <el-descriptions
-          v-if="currentDetail"
-          :column="2"
-          border
-          class="log-descriptions"
-        >
-          <el-descriptions-item label="ID">{{
-            currentDetail.id
-          }}</el-descriptions-item>
-          <el-descriptions-item label="用户名">{{
-            currentDetail.username
-          }}</el-descriptions-item>
-          <el-descriptions-item label="角色">{{
-            currentDetail.roleName
-          }}</el-descriptions-item>
-          <el-descriptions-item label="请求方法">
-            <el-tag
-              :type="getMethodType(currentDetail.method)"
-              size="small"
-              effect="light"
-              class="method-tag"
-            >
-              {{ currentDetail.method }}
-            </el-tag>
-          </el-descriptions-item>
-          <el-descriptions-item label="请求路径" :span="2">
-            <div class="text-wrap">{{ currentDetail.path }}</div>
-          </el-descriptions-item>
-          <el-descriptions-item label="状态">
-            <el-tag :type="currentDetail.status === 1 ? 'success' : 'danger'">
-              {{ currentDetail.status === 1 ? "成功" : "失败" }}
-            </el-tag>
-          </el-descriptions-item>
-          <el-descriptions-item label="IP地址">{{
-            currentDetail.ip
-          }}</el-descriptions-item>
-          <el-descriptions-item label="耗时(ms)">{{
-            currentDetail.operationTime
-          }}</el-descriptions-item>
-          <el-descriptions-item label="操作时间">{{
-            currentDetail.createdAt
-          }}</el-descriptions-item>
-          <el-descriptions-item label="请求数据" :span="2">
-            <pre
-              class="json-content"
-            ><code class="json-code" v-html="highlightJson(formatJson(currentDetail.requestData))"/></pre>
-          </el-descriptions-item>
-          <el-descriptions-item label="响应数据" :span="2">
-            <pre
-              class="json-content"
-            ><code class="json-code" v-html="highlightJson(formatJson(currentDetail.responseData))"/></pre>
-          </el-descriptions-item>
-          <el-descriptions-item
-            v-if="currentDetail.errorMessage"
-            label="错误信息"
-            :span="2"
-          >
-            <span class="error-text">{{ currentDetail.errorMessage }}</span>
-          </el-descriptions-item>
-          <el-descriptions-item label="User-Agent" :span="2">
-            <div class="text-wrap">{{ currentDetail.userAgent || "-" }}</div>
-          </el-descriptions-item>
-        </el-descriptions>
-      </el-dialog>
-    </el-card>
-  </div>
-</template>
 
 <style scoped>
 .card-header {

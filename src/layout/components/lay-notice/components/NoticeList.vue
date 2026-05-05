@@ -1,3 +1,10 @@
+<template>
+  <div v-if="list.length">
+    <NoticeItem v-for="(item, index) in list" :key="index" :noticeItem="item" />
+  </div>
+  <el-empty v-else :description="emptyText" />
+</template>
+
 <script setup lang="ts">
 import { PropType } from "vue";
 import { ListItem } from "../data";
@@ -14,10 +21,3 @@ defineProps({
   }
 });
 </script>
-
-<template>
-  <div v-if="list.length">
-    <NoticeItem v-for="(item, index) in list" :key="index" :noticeItem="item" />
-  </div>
-  <el-empty v-else :description="emptyText" />
-</template>

@@ -1,39 +1,3 @@
-<script setup lang="ts">
-import { useRouter } from "vue-router";
-import { useNav } from "@/layout/hooks/useNav";
-import LaySearch from "../lay-search/index.vue";
-import LayNotice from "../lay-notice/index.vue";
-import LayNavMix from "../lay-sidebar/NavMix.vue";
-import LaySidebarFullScreen from "../lay-sidebar/components/SidebarFullScreen.vue";
-import LaySidebarBreadCrumb from "../lay-sidebar/components/SidebarBreadCrumb.vue";
-import LaySidebarTopCollapse from "../lay-sidebar/components/SidebarTopCollapse.vue";
-
-import LogoutCircleRLine from "~icons/ri/logout-circle-r-line";
-import Setting from "~icons/ri/settings-3-line";
-import UserLine from "~icons/ri/user-line";
-
-const {
-  layout,
-  device,
-  logout,
-  onPanel,
-  pureApp,
-  username,
-  userAvatar,
-  userAvatarText,
-  userAvatarBgColor,
-  showAvatarImage,
-  avatarsStyle,
-  toggleSideBar
-} = useNav();
-
-const router = useRouter();
-
-const goToProfile = () => {
-  router.push("/profile/index");
-};
-</script>
-
 <template>
   <div class="navbar bg-[#fff] shadow-xs shadow-[rgba(0,21,41,0.08)]">
     <LaySidebarTopCollapse
@@ -98,6 +62,42 @@ const goToProfile = () => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { useRouter } from "vue-router";
+import { useNav } from "@/layout/hooks/useNav";
+import LaySearch from "../lay-search/index.vue";
+import LayNotice from "../lay-notice/index.vue";
+import LayNavMix from "../lay-sidebar/NavMix.vue";
+import LaySidebarFullScreen from "../lay-sidebar/components/SidebarFullScreen.vue";
+import LaySidebarBreadCrumb from "../lay-sidebar/components/SidebarBreadCrumb.vue";
+import LaySidebarTopCollapse from "../lay-sidebar/components/SidebarTopCollapse.vue";
+
+import LogoutCircleRLine from "~icons/ri/logout-circle-r-line";
+import Setting from "~icons/ri/settings-3-line";
+import UserLine from "~icons/ri/user-line";
+
+const {
+  layout,
+  device,
+  logout,
+  onPanel,
+  pureApp,
+  username,
+  userAvatar,
+  userAvatarText,
+  userAvatarBgColor,
+  showAvatarImage,
+  avatarsStyle,
+  toggleSideBar
+} = useNav();
+
+const router = useRouter();
+
+const goToProfile = () => {
+  router.push("/profile/index");
+};
+</script>
 
 <style lang="scss" scoped>
 .navbar {

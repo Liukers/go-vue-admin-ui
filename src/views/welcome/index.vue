@@ -84,7 +84,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useUserStoreHook } from "@/store/modules/user";
 import { usePermissionStoreHook } from "@/store/modules/permission";
 import { useRouter } from "vue-router";
@@ -248,7 +248,9 @@ const fetchLoginTime = async () => {
       loginInfo.value.loginTime = res.data.list[0].createdAt;
     }
   } catch (error) {
-    console.error("获取登录时间失败:", error);
+    if (import.meta.env.DEV) {
+      console.error("获取登录时间失败:", error);
+    }
   }
 };
 
@@ -257,11 +259,17 @@ const handleQuickLink = (path: string) => {
   router.push(path);
 };
 
+let timer: ReturnType<typeof setInterval> | null = null;
+
 onMounted(() => {
   loginInfo.value.username = userStore.username || "";
   updateTime();
-  setInterval(updateTime, 1000);
+  timer = setInterval(updateTime, 1000);
   fetchLoginTime();
+});
+
+onUnmounted(() => {
+  if (timer) clearInterval(timer);
 });
 </script>
 

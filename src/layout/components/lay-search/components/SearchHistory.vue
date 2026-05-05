@@ -1,3 +1,44 @@
+<template>
+  <div ref="historyRef" class="history">
+    <template v-if="historyList.length">
+      <div :style="titleStyle">搜索历史</div>
+      <div
+        v-for="(item, index) in historyList"
+        :key="item.path"
+        :ref="'historyItemRef' + index"
+        class="history-item dark:bg-[#1d1d1d]"
+        :style="itemStyle(item)"
+        @click="handleTo"
+        @mouseenter="handleMouse(item)"
+      >
+        <SearchHistoryItem
+          :item="item"
+          @delete-item="handleDelete"
+          @collect-item="handleCollect"
+        />
+      </div>
+    </template>
+    <template v-if="collectList.length">
+      <div :style="titleStyle">
+        {{ `收藏${collectList.length > 1 ? "（可拖拽排序）" : ""}` }}
+      </div>
+      <div class="collect-container">
+        <div
+          v-for="(item, index) in collectList"
+          :key="item.path"
+          :ref="'historyItemRef' + (index + historyList.length)"
+          class="history-item dark:bg-[#1d1d1d]"
+          :style="itemStyle(item)"
+          @click="handleTo"
+          @mouseenter="handleMouse(item)"
+        >
+          <SearchHistoryItem :item="item" @delete-item="handleDelete" />
+        </div>
+      </div>
+    </template>
+  </div>
+</template>
+
 <script setup lang="ts">
 import Sortable from "sortablejs";
 import SearchHistoryItem from "./SearchHistoryItem.vue";
@@ -16,7 +57,7 @@ interface Emits {
 
 const historyRef = ref();
 const innerHeight = ref();
-/** 判断是否停止鼠标移入事件处理 */
+// 判断是否停止鼠标移入事件处理
 const stopMouseEvent = ref(false);
 
 const emit = defineEmits<Emits>();
@@ -78,7 +119,7 @@ function handleDelete(item) {
   emit("delete", item);
 }
 
-/** 鼠标移入 */
+// 鼠标移入
 async function handleMouse(item) {
   if (!stopMouseEvent.value) active.value = item.path;
 }
@@ -137,47 +178,6 @@ watch(
 
 defineExpose({ handleScroll });
 </script>
-
-<template>
-  <div ref="historyRef" class="history">
-    <template v-if="historyList.length">
-      <div :style="titleStyle">搜索历史</div>
-      <div
-        v-for="(item, index) in historyList"
-        :key="item.path"
-        :ref="'historyItemRef' + index"
-        class="history-item dark:bg-[#1d1d1d]"
-        :style="itemStyle(item)"
-        @click="handleTo"
-        @mouseenter="handleMouse(item)"
-      >
-        <SearchHistoryItem
-          :item="item"
-          @delete-item="handleDelete"
-          @collect-item="handleCollect"
-        />
-      </div>
-    </template>
-    <template v-if="collectList.length">
-      <div :style="titleStyle">
-        {{ `收藏${collectList.length > 1 ? "（可拖拽排序）" : ""}` }}
-      </div>
-      <div class="collect-container">
-        <div
-          v-for="(item, index) in collectList"
-          :key="item.path"
-          :ref="'historyItemRef' + (index + historyList.length)"
-          class="history-item dark:bg-[#1d1d1d]"
-          :style="itemStyle(item)"
-          @click="handleTo"
-          @mouseenter="handleMouse(item)"
-        >
-          <SearchHistoryItem :item="item" @delete-item="handleDelete" />
-        </div>
-      </div>
-    </template>
-  </div>
-</template>
 
 <style lang="scss" scoped>
 .history {

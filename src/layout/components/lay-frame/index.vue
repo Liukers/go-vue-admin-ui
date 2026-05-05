@@ -1,3 +1,18 @@
+<template>
+  <template v-for="[fullPath, Comp] in compList" :key="fullPath">
+    <div v-show="fullPath === currRoute.fullPath" class="w-full h-full">
+      <slot
+        :fullPath="fullPath"
+        :Comp="Comp"
+        :frameInfo="{ frameSrc: currRoute.meta?.frameSrc, fullPath }"
+      />
+    </div>
+  </template>
+  <div v-show="!keep" class="w-full h-full">
+    <slot :Comp="normalComp" :fullPath="currRoute.fullPath" frameInfo />
+  </div>
+</template>
+
 <script setup lang="ts">
 import { getConfig } from "@/config";
 import { useMultiFrame } from "@/layout/hooks/useMultiFrame";
@@ -63,17 +78,3 @@ watch(
   }
 );
 </script>
-<template>
-  <template v-for="[fullPath, Comp] in compList" :key="fullPath">
-    <div v-show="fullPath === currRoute.fullPath" class="w-full h-full">
-      <slot
-        :fullPath="fullPath"
-        :Comp="Comp"
-        :frameInfo="{ frameSrc: currRoute.meta?.frameSrc, fullPath }"
-      />
-    </div>
-  </template>
-  <div v-show="!keep" class="w-full h-full">
-    <slot :Comp="normalComp" :fullPath="currRoute.fullPath" frameInfo />
-  </div>
-</template>

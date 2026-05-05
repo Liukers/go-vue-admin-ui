@@ -1,11 +1,11 @@
 import { reactive } from "vue";
 import type { FormRules } from "element-plus";
 
-/** 密码正则（密码格式应为8-18位数字、字母、符号的任意两种组合） */
+// 密码正则（密码格式应为8-18位数字、字母、符号的任意两种组合）
 export const REGEXP_PWD =
   /^(?![0-9]+$)(?![a-z]+$)(?![A-Z]+$)(?!([^(0-9a-zA-Z)]|[()])+$)(?!^.*[\u4E00-\u9FA5].*$)([^(0-9a-zA-Z)]|[()]|[a-z]|[A-Z]|[0-9]){8,18}$/;
 
-/** 登录校验 */
+// 登录校验
 const loginRules = reactive<FormRules>({
   password: [
     {
@@ -20,6 +20,13 @@ const loginRules = reactive<FormRules>({
           callback();
         }
       },
+      trigger: "blur"
+    }
+  ],
+  captchaCode: [
+    {
+      required: true,
+      message: "请输入验证码",
       trigger: "blur"
     }
   ]

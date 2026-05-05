@@ -7,7 +7,7 @@ export interface CopyEl extends HTMLElement {
   copyValue: string;
 }
 
-/** 文本复制指令（默认双击复制） */
+// 文本复制指令（默认双击复制）
 export const copy: Directive = {
   mounted(el: CopyEl, binding: DirectiveBinding<string>) {
     const { value } = binding;

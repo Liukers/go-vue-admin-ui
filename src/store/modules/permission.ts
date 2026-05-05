@@ -23,7 +23,7 @@ export const usePermissionStore = defineStore("pure-permission", {
     cachePageList: []
   }),
   actions: {
-    /** 组装整体路由生成的菜单 */
+    // 组装整体路由生成的菜单
     handleWholeMenus(routes: any[]) {
       this.wholeMenus = filterNoPermissionTree(
         filterTree(ascending(this.constantMenus.concat(routes)))
@@ -32,7 +32,7 @@ export const usePermissionStore = defineStore("pure-permission", {
         this.constantMenus.concat(routes) as any
       );
     },
-    /** 监听缓存页面是否存在于标签页，不存在则删除 */
+    // 监听缓存页面是否存在于标签页，不存在则删除
     clearCache() {
       let cacheLength = this.cachePageList.length;
       const nameList = getKeyList(useMultiTagsStoreHook().multiTags, "name");
@@ -62,7 +62,7 @@ export const usePermissionStore = defineStore("pure-permission", {
           break;
       }
     },
-    /** 清空缓存页面 */
+    // 清空缓存页面
     clearAllCachePage() {
       this.wholeMenus = [];
       this.cachePageList = [];

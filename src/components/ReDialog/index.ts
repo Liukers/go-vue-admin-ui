@@ -12,7 +12,7 @@ import type {
 
 const dialogStore = ref<Array<DialogOptions>>([]);
 
-/** 打开弹框 */
+// 打开弹框
 const addDialog = (options: DialogOptions) => {
   const open = () =>
     dialogStore.value.push(Object.assign(options, { visible: true }));
@@ -25,7 +25,7 @@ const addDialog = (options: DialogOptions) => {
   }
 };
 
-/** 关闭弹框 */
+// 关闭弹框
 const closeDialog = (options: DialogOptions, index: number, args?: any) => {
   dialogStore.value[index].visible = false;
   options.closeCallBack && options.closeCallBack({ options, index, args });
@@ -46,7 +46,7 @@ const updateDialog = (value: any, key = "title", index = 0) => {
   dialogStore.value[index][key] = value;
 };
 
-/** 关闭所有弹框 */
+// 关闭所有弹框
 const closeAllDialog = () => {
   dialogStore.value = [];
 };

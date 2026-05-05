@@ -1,3 +1,81 @@
+<template>
+  <div class="main">
+    <el-card v-loading="loading" shadow="never">
+      <template #header>
+        <div class="card-header">
+          <span class="font-medium">
+            <el-icon class="icon"
+              ><component :is="useRenderIcon(Setting)"
+            /></el-icon>
+            系统设置
+          </span>
+          <div class="header-buttons">
+            <el-button
+              :icon="useRenderIcon(Refresh)"
+              :loading="refreshing"
+              @click="handleRefreshMenu"
+            >
+              刷新菜单
+            </el-button>
+            <el-button
+              type="primary"
+              :icon="useRenderIcon(CircleCheck)"
+              :loading="saving"
+              @click="handleSave"
+            >
+              保存设置
+            </el-button>
+          </div>
+        </div>
+      </template>
+
+      <el-form :model="settingForm" label-width="180px" class="setting-form">
+        <el-form-item label="操作日志记录">
+          <el-switch
+            v-model="settingForm.enableOperationLog"
+            :active-value="1"
+            :inactive-value="2"
+            active-text="开启"
+            inactive-text="关闭"
+          />
+          <div class="form-tip">
+            开启后系统将记录所有用户的操作行为，包括请求路径、请求参数、响应数据等
+          </div>
+        </el-form-item>
+
+        <el-form-item label="登录日志记录">
+          <el-switch
+            v-model="settingForm.enableLoginLog"
+            :active-value="1"
+            :inactive-value="2"
+            active-text="开启"
+            inactive-text="关闭"
+          />
+          <div class="form-tip">
+            开启后系统将记录所有用户的登录行为，包括登录时间、IP地址、浏览器信息等
+          </div>
+        </el-form-item>
+
+        <el-form-item v-if="settingForm.updatedAt" label="最后更新时间">
+          <span class="text-muted">{{ settingForm.updatedAt }}</span>
+        </el-form-item>
+      </el-form>
+
+      <el-divider />
+
+      <div class="setting-notice">
+        <h4>说明</h4>
+        <ul>
+          <li>开启日志功能会增加数据库的存储压力，建议定期清理日志数据</li>
+          <li>关闭日志功能后，相关的操作日志和登录日志菜单将自动隐藏</li>
+          <li>修改设置后需要点击「刷新菜单」按钮，侧边栏菜单会立即更新</li>
+          <li>刷新菜单后无需重启服务，设置会立即生效</li>
+        </ul>
+      </div>
+    </el-card>
+  </div>
+</template>
+
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { message } from "@/utils/message";
@@ -85,84 +163,6 @@ onMounted(() => {
   fetchSetting();
 });
 </script>
-
-<template>
-  <div class="main">
-    <el-card v-loading="loading" shadow="never">
-      <template #header>
-        <div class="card-header">
-          <span class="font-medium">
-            <el-icon class="icon"
-              ><component :is="useRenderIcon(Setting)"
-            /></el-icon>
-            系统设置
-          </span>
-          <div class="header-buttons">
-            <el-button
-              :icon="useRenderIcon(Refresh)"
-              :loading="refreshing"
-              @click="handleRefreshMenu"
-            >
-              刷新菜单
-            </el-button>
-            <el-button
-              type="primary"
-              :icon="useRenderIcon(CircleCheck)"
-              :loading="saving"
-              @click="handleSave"
-            >
-              保存设置
-            </el-button>
-          </div>
-        </div>
-      </template>
-
-      <el-form :model="settingForm" label-width="180px" class="setting-form">
-        <el-form-item label="操作日志记录">
-          <el-switch
-            v-model="settingForm.enableOperationLog"
-            :active-value="1"
-            :inactive-value="2"
-            active-text="开启"
-            inactive-text="关闭"
-          />
-          <div class="form-tip">
-            开启后系统将记录所有用户的操作行为，包括请求路径、请求参数、响应数据等
-          </div>
-        </el-form-item>
-
-        <el-form-item label="登录日志记录">
-          <el-switch
-            v-model="settingForm.enableLoginLog"
-            :active-value="1"
-            :inactive-value="2"
-            active-text="开启"
-            inactive-text="关闭"
-          />
-          <div class="form-tip">
-            开启后系统将记录所有用户的登录行为，包括登录时间、IP地址、浏览器信息等
-          </div>
-        </el-form-item>
-
-        <el-form-item v-if="settingForm.updatedAt" label="最后更新时间">
-          <span class="text-muted">{{ settingForm.updatedAt }}</span>
-        </el-form-item>
-      </el-form>
-
-      <el-divider />
-
-      <div class="setting-notice">
-        <h4>说明</h4>
-        <ul>
-          <li>开启日志功能会增加数据库的存储压力，建议定期清理日志数据</li>
-          <li>关闭日志功能后，相关的操作日志和登录日志菜单将自动隐藏</li>
-          <li>修改设置后需要点击「刷新菜单」按钮，侧边栏菜单会立即更新</li>
-          <li>刷新菜单后无需重启服务，设置会立即生效</li>
-        </ul>
-      </div>
-    </el-card>
-  </div>
-</template>
 
 <style scoped>
 .card-header {

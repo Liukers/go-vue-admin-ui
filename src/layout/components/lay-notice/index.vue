@@ -1,21 +1,3 @@
-<script setup lang="ts">
-import { ref, computed } from "vue";
-import { noticesData } from "./data";
-import NoticeList from "./components/NoticeList.vue";
-import BellIcon from "~icons/ep/bell";
-
-const noticesNum = ref(0);
-const notices = ref(noticesData);
-const activeKey = ref(noticesData[0]?.key);
-
-notices.value.map(v => (noticesNum.value += v.list.length));
-
-const getLabel = computed(
-  () => item =>
-    item.name + (item.list.length > 0 ? `(${item.list.length})` : "")
-);
-</script>
-
 <template>
   <el-dropdown trigger="click" placement="bottom-end">
     <span
@@ -61,6 +43,24 @@ const getLabel = computed(
     </template>
   </el-dropdown>
 </template>
+
+<script setup lang="ts">
+import { ref, computed } from "vue";
+import { noticesData } from "./data";
+import NoticeList from "./components/NoticeList.vue";
+import BellIcon from "~icons/ep/bell";
+
+const noticesNum = ref(0);
+const notices = ref(noticesData);
+const activeKey = ref(noticesData[0]?.key);
+
+notices.value.map(v => (noticesNum.value += v.list.length));
+
+const getLabel = computed(
+  () => item =>
+    item.name + (item.list.length > 0 ? `(${item.list.length})` : "")
+);
+</script>
 
 <style lang="scss" scoped>
 .dropdown-badge {

@@ -1,9 +1,3 @@
-<script setup lang="ts">
-import { getConfig } from "@/config";
-
-const TITLE = getConfig("Title");
-</script>
-
 <template>
   <footer
     class="layout-footer text-[rgba(0,0,0,0.6)] dark:text-[rgba(220,220,242,0.8)]"
@@ -18,6 +12,12 @@ const TITLE = getConfig("Title");
     </a>
   </footer>
 </template>
+
+<script setup lang="ts">
+import { getConfig } from "@/config";
+
+const TITLE = getConfig("Title");
+</script>
 
 <style lang="scss" scoped>
 .layout-footer {

@@ -26,7 +26,7 @@ const getConfig = (key?: string): PlatformConfigs => {
   return config;
 };
 
-/** 获取项目动态全局配置 */
+// 获取项目动态全局配置
 export const getPlatformConfig = async (app: App): Promise<undefined> => {
   app.config.globalProperties.$config = getConfig();
   return axios({
@@ -49,7 +49,7 @@ export const getPlatformConfig = async (app: App): Promise<undefined> => {
     });
 };
 
-/** 本地响应式存储的命名空间 */
+// 本地响应式存储的命名空间
 const responsiveStorageNameSpace = () => getConfig().ResponsiveStorageNameSpace;
 
 export { getConfig, setConfig, responsiveStorageNameSpace };

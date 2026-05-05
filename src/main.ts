@@ -11,7 +11,9 @@ window.addEventListener("error", event => {
     errorMsg.includes("Cannot read properties of null")
   ) {
     event.preventDefault();
-    console.warn("[Plugin Error Filtered]", errorMsg);
+    if (import.meta.env.DEV) {
+      console.warn("[Plugin Error Filtered]", errorMsg);
+    }
     return;
   }
 });
@@ -24,7 +26,14 @@ window.addEventListener("unhandledrejection", event => {
     errorMsg.includes("content.bundle.js")
   ) {
     event.preventDefault();
-    console.warn("[Plugin Error Filtered]", errorMsg);
+    if (import.meta.env.DEV) {
+      console.warn("[Plugin Error Filtered]", errorMsg);
+    }
+    return;
+  }
+  // 非插件错误的 Promise 未捕获
+  if (import.meta.env.DEV) {
+    console.error("[Unhandled Promise Rejection]", event.reason);
   }
 });
 
@@ -51,6 +60,13 @@ import "./assets/iconfont/iconfont.js";
 import "./assets/iconfont/iconfont.css";
 
 const app = createApp(App);
+
+// Vue 全局错误处理器
+app.config.errorHandler = (err, _vm, info) => {
+  if (import.meta.env.DEV) {
+    console.error("[Vue Error]", err, info);
+  }
+};
 
 // 自定义指令
 import * as directives from "@/directives";

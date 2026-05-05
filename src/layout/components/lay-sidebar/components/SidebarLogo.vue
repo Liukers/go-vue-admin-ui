@@ -1,14 +1,3 @@
-<script setup lang="ts">
-import { getTopMenu } from "@/router/utils";
-import { useNav } from "@/layout/hooks/useNav";
-
-defineProps({
-  collapse: Boolean
-});
-
-const { title, getLogo } = useNav();
-</script>
-
 <template>
   <div class="sidebar-logo-container" :class="{ collapses: collapse }">
     <transition name="sidebarLogoFade">
@@ -35,6 +24,17 @@ const { title, getLogo } = useNav();
     </transition>
   </div>
 </template>
+
+<script setup lang="ts">
+import { getTopMenu } from "@/router/utils";
+import { useNav } from "@/layout/hooks/useNav";
+
+defineProps({
+  collapse: Boolean
+});
+
+const { title, getLogo } = useNav();
+</script>
 
 <style lang="scss" scoped>
 .sidebar-logo-container {

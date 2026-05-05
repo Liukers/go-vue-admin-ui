@@ -43,7 +43,7 @@ export function useDataThemeChange() {
     targetEl.className = flag ? `${className} ${clsName}` : className;
   }
 
-  /** 设置导航主题色 */
+  // 设置导航主题色
   function setLayoutThemeColor(
     theme = getConfig().Theme ?? "light",
     isClick = true
@@ -77,7 +77,7 @@ export function useDataThemeChange() {
     );
   }
 
-  /** 设置 `element-plus` 主题色 */
+  // 设置 `element-plus` 主题色
   const setEpThemeColor = (color: string) => {
     useEpThemeStoreHook().setEpThemeColor(color);
     document.documentElement.style.setProperty("--el-color-primary", color);
@@ -89,7 +89,7 @@ export function useDataThemeChange() {
     }
   };
 
-  /** 浅色、深色整体风格切换 */
+  // 浅色、深色整体风格切换
   function dataThemeChange(overall?: string) {
     overallStyle.value = overall;
     if (useEpThemeStoreHook().epTheme === "light" && dataTheme.value) {
@@ -108,7 +108,7 @@ export function useDataThemeChange() {
     }
   }
 
-  /** 清空缓存并返回登录页 */
+  // 清空缓存并返回登录页
   function onReset() {
     removeToken();
     storageLocal().clear();

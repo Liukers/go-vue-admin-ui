@@ -1,52 +1,3 @@
-<script setup lang="ts">
-import { ListItem } from "../data";
-import { ref, PropType, nextTick } from "vue";
-import { useNav } from "@/layout/hooks/useNav";
-import { deviceDetection } from "@pureadmin/utils";
-
-defineProps({
-  noticeItem: {
-    type: Object as PropType<ListItem>,
-    default: () => {}
-  }
-});
-
-const titleRef = ref(null);
-const titleTooltip = ref(false);
-const descriptionRef = ref(null);
-const descriptionTooltip = ref(false);
-const { tooltipEffect } = useNav();
-const isMobile = deviceDetection();
-
-function hoverTitle() {
-  nextTick(() => {
-    titleRef.value?.scrollWidth > titleRef.value?.clientWidth
-      ? (titleTooltip.value = true)
-      : (titleTooltip.value = false);
-  });
-}
-
-function hoverDescription(event, description) {
-  // currentWidth 为文本在页面中所占的宽度，创建标签，加入到页面，获取currentWidth ,最后在移除
-  const tempTag = document.createElement("span");
-  tempTag.innerText = description;
-  tempTag.className = "getDescriptionWidth";
-  document.querySelector("body").appendChild(tempTag);
-  const currentWidth = (
-    document.querySelector(".getDescriptionWidth") as HTMLSpanElement
-  ).offsetWidth;
-  document.querySelector(".getDescriptionWidth").remove();
-
-  // cellWidth为容器的宽度
-  const cellWidth = event.target.offsetWidth;
-
-  // 当文本宽度大于容器宽度两倍时，代表文本显示超过两行
-  currentWidth > 2 * cellWidth
-    ? (descriptionTooltip.value = true)
-    : (descriptionTooltip.value = false);
-}
-</script>
-
 <template>
   <div
     class="notice-container border-0 border-b-[1px] border-solid border-[#f0f0f0] dark:border-[#303030]"
@@ -107,11 +58,61 @@ function hoverDescription(event, description) {
   </div>
 </template>
 
+<script setup lang="ts">
+import { ListItem } from "../data";
+import { ref, PropType, nextTick } from "vue";
+import { useNav } from "@/layout/hooks/useNav";
+import { deviceDetection } from "@pureadmin/utils";
+
+defineProps({
+  noticeItem: {
+    type: Object as PropType<ListItem>,
+    default: () => {}
+  }
+});
+
+const titleRef = ref(null);
+const titleTooltip = ref(false);
+const descriptionRef = ref(null);
+const descriptionTooltip = ref(false);
+const { tooltipEffect } = useNav();
+const isMobile = deviceDetection();
+
+function hoverTitle() {
+  nextTick(() => {
+    titleRef.value?.scrollWidth > titleRef.value?.clientWidth
+      ? (titleTooltip.value = true)
+      : (titleTooltip.value = false);
+  });
+}
+
+function hoverDescription(event, description) {
+  // currentWidth 为文本在页面中所占的宽度，创建标签，加入到页面，获取currentWidth ,最后在移除
+  const tempTag = document.createElement("span");
+  tempTag.innerText = description;
+  tempTag.className = "getDescriptionWidth";
+  document.querySelector("body").appendChild(tempTag);
+  const currentWidth = (
+    document.querySelector(".getDescriptionWidth") as HTMLSpanElement
+  ).offsetWidth;
+  document.querySelector(".getDescriptionWidth").remove();
+
+  // cellWidth为容器的宽度
+  const cellWidth = event.target.offsetWidth;
+
+  // 当文本宽度大于容器宽度两倍时，代表文本显示超过两行
+  currentWidth > 2 * cellWidth
+    ? (descriptionTooltip.value = true)
+    : (descriptionTooltip.value = false);
+}
+</script>
+
 <style>
 .notice-title-popper {
   max-width: 238px;
 }
 </style>
+
 <style lang="scss" scoped>
 .notice-container {
   display: flex;
