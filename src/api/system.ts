@@ -1,4 +1,5 @@
 import { http } from "@/utils/http";
+import { formatToken } from "@/utils/auth";
 
 // ==================== 通用响应类型 ====================
 export type Result<T = any> = {
@@ -69,11 +70,13 @@ export const logout = () => {
   return http.request<Result<null>>("post", "/v1/system/logout");
 };
 
-// 刷新token
-export const refreshToken = () => {
+// 刷新token（显式携带已过期的token：后端校验签名并在宽限期内换发）
+export const refreshToken = (expiredToken: string) => {
   return http.request<Result<{ token: string; expiresAt: number }>>(
     "post",
-    "/v1/system/refresh-token"
+    "/v1/system/refresh-token",
+    {},
+    { headers: { Authorization: formatToken(expiredToken) } }
   );
 };
 
@@ -191,6 +194,8 @@ export type MenuInfo = {
   path: string;
   component: string;
   perm: string;
+  apiPath?: string;
+  method?: string;
   sort: number;
   status: number;
   visible: number;
@@ -226,13 +231,6 @@ export const updateMenu = (data: Partial<MenuInfo>) => {
 // 删除菜单
 export const deleteMenu = (id: number) => {
   return http.request<Result<null>>("delete", `/v1/system/menus/${id}`);
-};
-
-// 重置用户密码（管理员）
-export const resetUserPassword = (id: number, password: string) => {
-  return http.request<Result<null>>("put", `/v1/system/user/update`, {
-    data: { id, password }
-  });
 };
 
 // 更新当前用户信息（个人中心）

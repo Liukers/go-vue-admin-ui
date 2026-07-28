@@ -48,12 +48,17 @@
                 <el-button @click="handleReset">重置</el-button>
               </el-form-item>
             </el-form>
-            <el-button type="danger" @click="handleClear">清空日志</el-button>
+            <el-button
+              v-perms="'system:log:login:clear'"
+              type="danger"
+              @click="handleClear"
+            >
+              清空日志
+            </el-button>
           </div>
         </div>
       </template>
 
-      <!-- 数据表格 -->
       <el-table v-loading="loading" :data="dataList" border stripe row-key="id">
         <el-table-column
           v-for="col in columns"
@@ -73,6 +78,7 @@
             <template v-else-if="col.slot === 'operation'">
               <div class="operation-buttons">
                 <el-button
+                  v-perms="'system:log:login:delete'"
                   link
                   type="danger"
                   :icon="useRenderIcon(Delete)"
@@ -89,7 +95,6 @@
         </el-table-column>
       </el-table>
 
-      <!-- 分页 -->
       <div class="pagination-container">
         <el-pagination
           v-model:current-page="currentPage"
@@ -106,8 +111,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from "vue";
+import { reactive } from "vue";
 import { message } from "@/utils/message";
+import { useCrudPage } from "@/hooks/useCrudPage";
 import {
   getLoginLogList,
   deleteLoginLog,
@@ -122,17 +128,32 @@ defineOptions({
   name: "LoginLog"
 });
 
-const loading = ref(false);
-const dataList = ref<LoginLogInfo[]>([]);
-const currentPage = ref(1);
-const pageSize = ref(20);
-const total = ref(0);
-
 const searchForm = reactive({
   username: "",
   status: undefined as number | undefined,
   startTime: "",
   endTime: ""
+});
+
+const {
+  loading,
+  dataList,
+  total,
+  currentPage,
+  pageSize,
+  fetchData,
+  handleSearch,
+  handleSizeChange,
+  handleCurrentChange
+} = useCrudPage<LoginLogInfo>({
+  fetchApi: getLoginLogList,
+  buildParams: () => ({
+    username: searchForm.username || undefined,
+    status: searchForm.status,
+    startTime: searchForm.startTime || undefined,
+    endTime: searchForm.endTime || undefined
+  }),
+  showFetchError: true
 });
 
 const columns = [
@@ -147,33 +168,6 @@ const columns = [
   { label: "登录时间", prop: "createdAt", minWidth: 160 },
   { label: "操作", fixed: "right", width: 100, slot: "operation" }
 ];
-
-const fetchData = async () => {
-  loading.value = true;
-  try {
-    const res = await getLoginLogList({
-      page: currentPage.value,
-      pageSize: pageSize.value,
-      username: searchForm.username || undefined,
-      status: searchForm.status,
-      startTime: searchForm.startTime || undefined,
-      endTime: searchForm.endTime || undefined
-    });
-    if (res.code === 200) {
-      dataList.value = res.data.list;
-      total.value = res.data.total;
-    } else {
-      message(res.message, { type: "error" });
-    }
-  } finally {
-    loading.value = false;
-  }
-};
-
-const handleSearch = () => {
-  currentPage.value = 1;
-  fetchData();
-};
 
 const handleReset = () => {
   searchForm.username = "";
@@ -215,20 +209,6 @@ const handleClear = () => {
     }
   });
 };
-
-const handleSizeChange = (val: number) => {
-  pageSize.value = val;
-  fetchData();
-};
-
-const handleCurrentChange = (val: number) => {
-  currentPage.value = val;
-  fetchData();
-};
-
-onMounted(() => {
-  fetchData();
-});
 </script>
 
 <style scoped>

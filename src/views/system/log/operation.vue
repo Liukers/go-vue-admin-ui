@@ -48,12 +48,17 @@
                 <el-button @click="handleReset">重置</el-button>
               </el-form-item>
             </el-form>
-            <el-button type="danger" @click="handleClear">清空日志</el-button>
+            <el-button
+              v-perms="'system:log:operation:clear'"
+              type="danger"
+              @click="handleClear"
+            >
+              清空日志
+            </el-button>
           </div>
         </div>
       </template>
 
-      <!-- 数据表格 -->
       <el-table v-loading="loading" :data="dataList" border stripe row-key="id">
         <el-table-column
           v-for="col in columns"
@@ -81,6 +86,7 @@
                   详情
                 </el-button>
                 <el-button
+                  v-perms="'system:log:operation:delete'"
                   link
                   type="danger"
                   :icon="useRenderIcon(Delete)"
@@ -97,7 +103,6 @@
         </el-table-column>
       </el-table>
 
-      <!-- 分页 -->
       <div class="pagination-container">
         <el-pagination
           v-model:current-page="currentPage"
@@ -110,7 +115,6 @@
         />
       </div>
 
-      <!-- 详情弹窗 -->
       <el-dialog
         v-model="detailVisible"
         title="操作日志详情"
@@ -189,8 +193,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from "vue";
+import { ref, reactive } from "vue";
 import { message } from "@/utils/message";
+import { useCrudPage } from "@/hooks/useCrudPage";
 import {
   getOperationLogList,
   deleteOperationLog,
@@ -206,17 +211,32 @@ defineOptions({
   name: "OperationLog"
 });
 
-const loading = ref(false);
-const dataList = ref<OperationLogInfo[]>([]);
-const currentPage = ref(1);
-const pageSize = ref(20);
-const total = ref(0);
-
 const searchForm = reactive({
   username: "",
   status: undefined as number | undefined,
   startTime: "",
   endTime: ""
+});
+
+const {
+  loading,
+  dataList,
+  total,
+  currentPage,
+  pageSize,
+  fetchData,
+  handleSearch,
+  handleSizeChange,
+  handleCurrentChange
+} = useCrudPage<OperationLogInfo>({
+  fetchApi: getOperationLogList,
+  buildParams: () => ({
+    username: searchForm.username || undefined,
+    status: searchForm.status,
+    startTime: searchForm.startTime || undefined,
+    endTime: searchForm.endTime || undefined
+  }),
+  showFetchError: true
 });
 
 const columns = [
@@ -231,33 +251,6 @@ const columns = [
   { label: "操作时间", prop: "createdAt", minWidth: 160 },
   { label: "操作", fixed: "right", width: 160, slot: "operation" }
 ];
-
-const fetchData = async () => {
-  loading.value = true;
-  try {
-    const res = await getOperationLogList({
-      page: currentPage.value,
-      pageSize: pageSize.value,
-      username: searchForm.username || undefined,
-      status: searchForm.status,
-      startTime: searchForm.startTime || undefined,
-      endTime: searchForm.endTime || undefined
-    });
-    if (res.code === 200) {
-      dataList.value = res.data.list;
-      total.value = res.data.total;
-    } else {
-      message(res.message, { type: "error" });
-    }
-  } finally {
-    loading.value = false;
-  }
-};
-
-const handleSearch = () => {
-  currentPage.value = 1;
-  fetchData();
-};
 
 const handleReset = () => {
   searchForm.username = "";
@@ -300,16 +293,6 @@ const handleClear = () => {
   });
 };
 
-const handleSizeChange = (val: number) => {
-  pageSize.value = val;
-  fetchData();
-};
-
-const handleCurrentChange = (val: number) => {
-  currentPage.value = val;
-  fetchData();
-};
-
 const detailVisible = ref(false);
 const currentDetail = ref<OperationLogInfo | null>(null);
 
@@ -328,16 +311,13 @@ const deepParseJson = (value: any): any => {
       String.fromCharCode(parseInt(hex, 16))
     );
 
-    // 尝试解析为 JSON
     try {
       const parsed = JSON.parse(unescaped);
-      // 如果解析成功且结果不同，递归处理
       if (parsed !== unescaped) {
         return deepParseJson(parsed);
       }
       return unescaped;
     } catch {
-      // 不是有效的 JSON，返回解转义后的值
       return unescaped;
     }
   } else if (Array.isArray(value)) {
@@ -371,38 +351,13 @@ const formatJson = (data: string | undefined): string => {
 
     // 解析为 JSON 对象
     let parsed = JSON.parse(processed);
-    // 递归解析嵌套的 JSON 字符串
     parsed = deepParseJson(parsed);
-    // 格式化输出（保留 2 空格缩进）
     return JSON.stringify(parsed, null, 2);
   } catch {
-    // 解析失败，返回原始数据
     return data;
   }
 };
 
-// JSON 语法高亮
-const highlightJson = (json: string): string => {
-  if (!json || json === "-") return json;
-
-  return (
-    json
-      // 转义 HTML 特殊字符
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      // 高亮字符串（包括键名）
-      .replace(/("(?:[^"\\]|\\.)*")/g, '<span class="json-string">$1</span>')
-      // 高亮数字
-      .replace(/\b(\d+\.?\d*)\b/g, '<span class="json-number">$1</span>')
-      // 高亮布尔值
-      .replace(/\b(true|false)\b/g, '<span class="json-boolean">$1</span>')
-      // 高亮 null
-      .replace(/\b(null)\b/g, '<span class="json-null">$1</span>')
-  );
-};
-
-// 获取请求方法的标签类型
 const getMethodType = (
   method: string
 ): "primary" | "success" | "warning" | "danger" | "info" => {
@@ -418,10 +373,6 @@ const getMethodType = (
   };
   return typeMap[method?.toUpperCase()] || "info";
 };
-
-onMounted(() => {
-  fetchData();
-});
 </script>
 
 <style scoped>
@@ -462,7 +413,6 @@ onMounted(() => {
   margin-top: 20px;
 }
 
-/* 弹窗样式 */
 :deep(.log-detail-dialog) {
   max-width: 90vw;
   border-radius: 8px;

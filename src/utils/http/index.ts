@@ -13,7 +13,7 @@ import { stringify } from "qs";
 import { getToken, formatToken, setToken } from "@/utils/auth";
 import { useUserStoreHook } from "@/store/modules/user";
 import { message } from "@/utils/message";
-import { isAuthError } from "@/utils/errorCode";
+import { ErrorCode, isAuthError } from "@/utils/errorCode";
 
 // 相关配置请参考：www.axios-js.com/zh-cn/docs/#axios-request-config-1
 const defaultConfig: AxiosRequestConfig = {
@@ -32,6 +32,31 @@ const defaultConfig: AxiosRequestConfig = {
   }
 };
 
+// 默认 token 过期时长（1 小时），解析 JWT 失败时兜底使用
+const DEFAULT_EXPIRES_IN = 60 * 60 * 1000;
+
+/**
+ * 解析 JWT payload 的 `exp` 字段，得到过期时间戳（毫秒）
+ * 解析失败时回退为当前时间 + 1 小时
+ */
+const parseTokenExpires = (token: string): number => {
+  const fallback = new Date().getTime() + DEFAULT_EXPIRES_IN;
+  try {
+    const payload = token.split(".")[1];
+    if (!payload) return fallback;
+    // base64url -> base64，并补齐 `=` 填充
+    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64.padEnd(
+      base64.length + ((4 - (base64.length % 4)) % 4),
+      "="
+    );
+    const { exp } = JSON.parse(atob(padded));
+    return typeof exp === "number" ? exp * 1000 : fallback;
+  } catch {
+    return fallback;
+  }
+};
+
 class PureHttp {
   constructor() {
     this.httpInterceptorsRequest();
@@ -44,13 +69,10 @@ class PureHttp {
   // 防止重复刷新`token`
   private static isRefreshing = false;
 
-  // 初始化配置对象
   private static initConfig: PureHttpRequestConfig = {};
 
-  // 保存当前`Axios`实例对象
   private static axiosInstance: AxiosInstance = Axios.create(defaultConfig);
 
-  // 重连原始请求
   private static retryOriginalRequest(config: PureHttpRequestConfig) {
     return new Promise((resolve, reject) => {
       PureHttp.requests.push((token: string | null) => {
@@ -64,7 +86,6 @@ class PureHttp {
     });
   }
 
-  // 请求拦截
   private httpInterceptorsRequest(): void {
     PureHttp.axiosInstance.interceptors.request.use(
       async (config: PureHttpRequestConfig): Promise<any> => {
@@ -96,7 +117,6 @@ class PureHttp {
                 if (expired) {
                   if (!PureHttp.isRefreshing) {
                     PureHttp.isRefreshing = true;
-                    // token过期刷新
                     useUserStoreHook()
                       .handRefreshToken({
                         accessToken: data.accessToken,
@@ -113,7 +133,6 @@ class PureHttp {
                         // 刷新失败，清空队列并传入 null 使等待请求 reject
                         PureHttp.requests.forEach(cb => cb(null));
                         PureHttp.requests = [];
-                        // 强制登出并提示用户重新登录
                         useUserStoreHook().logOut();
                         message(err?.message || "登录已过期，请重新登录", {
                           type: "warning"
@@ -141,7 +160,6 @@ class PureHttp {
     );
   }
 
-  // 响应拦截
   private httpInterceptorsResponse(): void {
     const instance = PureHttp.axiosInstance;
     instance.interceptors.response.use(
@@ -151,13 +169,11 @@ class PureHttp {
         // 检查是否收到刷新后的token
         const refreshedToken = response.headers["x-refresh-token"];
         if (refreshedToken) {
-          // 更新本地token
           const tokenData = getToken();
           if (tokenData) {
             tokenData.accessToken = refreshedToken;
-            // 重新计算过期时间
-            const expires = new Date().getTime() + 60 * 60 * 1000; // 默认1小时
-            tokenData.expires = expires;
+            // 解析新 token 的 exp 计算过期时间，失败时回退为 1 小时
+            tokenData.expires = parseTokenExpires(refreshedToken);
             setToken(tokenData);
           }
         }
@@ -170,9 +186,13 @@ class PureHttp {
             message(data.message || "登录已过期，请重新登录", {
               type: "warning"
             });
-            // 调用登出方法，清除token并跳转到登录页
             useUserStoreHook().logOut();
             return Promise.reject(new Error(data.message || "登录已过期"));
+          }
+          // 无权限（2001）：统一轻提示并中断，各页面无需再自行处理
+          if (data.code === ErrorCode.FORBIDDEN) {
+            message(data.message || "没有权限访问该资源", { type: "warning" });
+            return Promise.reject(new Error(data.message || "没有权限访问"));
           }
         }
 
@@ -191,14 +211,12 @@ class PureHttp {
         const $error = error;
         $error.isCancelRequest = Axios.isCancel($error);
 
-        // 处理服务器错误
         const { response } = error;
         if (response) {
           const { status } = response;
           if (status >= 500) {
             message(`服务器错误 (${status})，请稍后重试`, { type: "error" });
           } else if (status === 401) {
-            // 未授权，清除登录信息并跳转到登录页
             useUserStoreHook().logOut();
           } else if (status === 403) {
             message("没有权限访问该资源", { type: "warning" });
@@ -214,7 +232,6 @@ class PureHttp {
     );
   }
 
-  // 通用请求工具函数
   public request<T>(
     method: RequestMethods,
     url: string,
@@ -228,7 +245,6 @@ class PureHttp {
       ...axiosConfig
     } as PureHttpRequestConfig;
 
-    // 单独处理自定义请求/响应回调
     return new Promise((resolve, reject) => {
       PureHttp.axiosInstance
         .request(config)
@@ -241,7 +257,6 @@ class PureHttp {
     });
   }
 
-  // 单独抽离的`post`工具函数
   public post<T, P>(
     url: string,
     params?: AxiosRequestConfig<P>,
@@ -250,7 +265,6 @@ class PureHttp {
     return this.request<T>("post", url, params, config);
   }
 
-  // 单独抽离的`get`工具函数
   public get<T, P>(
     url: string,
     params?: AxiosRequestConfig<P>,

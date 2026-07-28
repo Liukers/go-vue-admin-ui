@@ -11,6 +11,7 @@ import {
   type Result,
   type LoginResult,
   login,
+  logout,
   refreshToken
 } from "@/api/system";
 import { useMultiTagsStoreHook } from "./multiTags";
@@ -24,12 +25,9 @@ import {
 
 export const useUserStore = defineStore("pure-user", {
   state: (): UserType => ({
-    // 头像
     avatar: storageLocal().getItem<DataInfo<number>>(USER_KEY)?.avatar ?? "",
-    // 用户名
     username:
       storageLocal().getItem<DataInfo<number>>(USER_KEY)?.username ?? "",
-    // 昵称
     nickname:
       storageLocal().getItem<DataInfo<number>>(USER_KEY)?.nickname ?? "",
     // 页面级别权限
@@ -43,35 +41,27 @@ export const useUserStore = defineStore("pure-user", {
     loginDay: 7
   }),
   actions: {
-    // 存储头像
     SET_AVATAR(avatar: string) {
       this.avatar = avatar;
     },
-    // 存储用户名
     SET_USERNAME(username: string) {
       this.username = username;
     },
-    // 存储昵称
     SET_NICKNAME(nickname: string) {
       this.nickname = nickname;
     },
-    // 存储角色
     SET_ROLES(roles: Array<string>) {
       this.roles = roles;
     },
-    // 存储按钮级别权限
     SET_PERMS(permissions: Array<string>) {
       this.permissions = permissions;
     },
-    // 存储是否勾选了登录页的免登录
     SET_ISREMEMBERED(bool: boolean) {
       this.isRemembered = bool;
     },
-    // 设置登录页的免登录存储几天
     SET_LOGINDAY(value: number) {
       this.loginDay = Number(value);
     },
-    // 登入
     async loginByUsername(data: {
       username: string;
       password: string;
@@ -83,9 +73,9 @@ export const useUserStore = defineStore("pure-user", {
           .then(res => {
             if (res.code === 200) {
               // 转换后端返回格式到前端存储格式
-              // 从后端返回的perms字段获取权限（如果有），否则根据角色设置默认权限
-              const userPerms = res.data.userInfo.perms || [];
-              const permissions = userPerms.length > 0 ? userPerms : ["*:*:*"];
+              // 安全原则 fail-close：权限完全以后端返回为准，
+              // 字段缺失时默认无任何权限，绝不让前端自行"升级"为超管
+              const permissions = res.data.userInfo.perms ?? [];
 
               const tokenData = {
                 accessToken: res.data.token,
@@ -95,14 +85,11 @@ export const useUserStore = defineStore("pure-user", {
                 username: res.data.userInfo.username,
                 nickname:
                   res.data.userInfo.nickname || res.data.userInfo.username,
-                roles: res.data.userInfo.roles
-                  ? res.data.userInfo.roles
-                  : ["admin"],
+                roles: res.data.userInfo.roles ?? [],
                 permissions: permissions
               };
               setToken(tokenData as any);
 
-              // 更新store中的权限信息
               this.SET_PERMS(permissions);
               this.SET_ROLES(tokenData.roles);
             }
@@ -113,8 +100,12 @@ export const useUserStore = defineStore("pure-user", {
           });
       });
     },
-    // 前端登出（不调用接口）
+    // 登出：token 未过期时先通知后端加入黑名单（失败不影响本地登出），再清理本地状态
     logOut() {
+      const tokenData = getToken();
+      if (tokenData && new Date().getTime() < tokenData.expires) {
+        logout().catch(() => {});
+      }
       this.username = "";
       this.roles = [];
       this.permissions = [];
@@ -123,18 +114,16 @@ export const useUserStore = defineStore("pure-user", {
       resetRouter();
       router.push("/login");
     },
-    // 刷新`token`
     async handRefreshToken(data: {
       accessToken: string;
       refreshToken: string;
       expires: number;
     }) {
       return new Promise<any>((resolve, reject) => {
-        // 调用后端刷新token接口
-        refreshToken()
+        // 显式携带已过期的token（后端校验签名并在宽限期内换发）
+        refreshToken(data.accessToken)
           .then(res => {
             if (res.code === 200 && res.data) {
-              // 更新token信息
               const oldToken = getToken() || {};
               const tokenData = {
                 ...oldToken,

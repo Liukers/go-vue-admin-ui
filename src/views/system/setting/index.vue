@@ -18,6 +18,7 @@
               刷新菜单
             </el-button>
             <el-button
+              v-perms="'system:setting:edit'"
               type="primary"
               :icon="useRenderIcon(CircleCheck)"
               :loading="saving"
@@ -143,13 +144,11 @@ const handleSave = async () => {
 
 const refreshing = ref(false);
 
-// 刷新路由菜单
 const handleRefreshMenu = async () => {
   refreshing.value = true;
   try {
     // 清除路由缓存
     storageLocal().removeItem("async-routes");
-    // 重新初始化路由
     await initRouter();
     message("菜单已刷新", { type: "success" });
   } catch (error) {

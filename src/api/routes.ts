@@ -1,6 +1,5 @@
 import { http } from "@/utils/http";
 
-// 路由元数据类型
 export type RouteMeta = {
   title: string;
   icon?: string;
@@ -11,7 +10,6 @@ export type RouteMeta = {
   [key: string]: any;
 };
 
-// 路由项类型
 export type RouteItem = {
   path: string;
   name?: string;

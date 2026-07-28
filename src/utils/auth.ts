@@ -130,6 +130,17 @@ export function removeToken() {
   storageLocal().removeItem(USER_KEY);
 }
 
+/** 更新本地缓存（USER_KEY）中的用户信息字段（个人中心修改昵称/头像后调用） */
+export const updateUserInfoCache = (info: {
+  nickname?: string;
+  avatar?: string;
+}) => {
+  const data = storageLocal().getItem<DataInfo<number>>(USER_KEY);
+  if (data) {
+    storageLocal().setItem(USER_KEY, { ...data, ...info });
+  }
+};
+
 // 格式化token（jwt格式）
 export const formatToken = (token: string): string => {
   return "Bearer " + token;

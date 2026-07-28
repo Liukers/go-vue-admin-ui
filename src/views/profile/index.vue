@@ -2,7 +2,6 @@
   <div class="main">
     <h3 class="page-title">个人中心</h3>
     <el-row :gutter="20">
-      <!-- 左侧：基本信息 -->
       <el-col :span="12">
         <el-card shadow="never">
           <template #header>
@@ -52,7 +51,6 @@
         </el-card>
       </el-col>
 
-      <!-- 右侧：修改密码 -->
       <el-col :span="12">
         <el-card shadow="never">
           <template #header>
@@ -108,22 +106,22 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from "vue";
 import { message } from "@/utils/message";
+import { REGEXP_PWD } from "@/utils/formRules";
 import {
   getUserInfo,
   updateCurrentUser,
   updateCurrentUserPassword
 } from "@/api/system";
 import { useUserStoreHook } from "@/store/modules/user";
+import { updateUserInfoCache } from "@/utils/auth";
 import type { FormInstance, FormRules } from "element-plus";
 
 defineOptions({ name: "Profile" });
 
 const userStore = useUserStoreHook();
 
-// 用户信息
 const userInfo = ref<any>({});
 
-// 基本信息表单
 const infoFormRef = ref<FormInstance>();
 const infoLoading = ref(false);
 const infoForm = reactive({
@@ -142,7 +140,6 @@ const infoRules: FormRules = {
   email: [{ type: "email", message: "邮箱格式不正确", trigger: "blur" }]
 };
 
-// 密码表单
 const pwdFormRef = ref<FormInstance>();
 const pwdLoading = ref(false);
 const pwdForm = reactive({
@@ -150,10 +147,6 @@ const pwdForm = reactive({
   newPassword: "",
   confirmPassword: ""
 });
-
-// 密码正则（密码格式应为8-18位数字、字母、符号的任意两种组合）
-const REGEXP_PWD =
-  /^(?![0-9]+$)(?![a-z]+$)(?![A-Z]+$)(?!([^(0-9a-zA-Z)]|[()])+$)(?!^.*[\u4E00-\u9FA5].*$)([^(0-9a-zA-Z)]|[()]|[a-z]|[A-Z]|[0-9]){8,18}$/;
 
 const validateConfirmPassword = (rule: any, value: string, callback: any) => {
   if (value !== pwdForm.newPassword) {
@@ -179,12 +172,10 @@ const pwdRules: FormRules = {
   ]
 };
 
-// 获取用户信息
 const fetchUserInfo = async () => {
   const res = await getUserInfo();
   if (res.code === 200) {
     userInfo.value = res.data;
-    // 填充表单
     infoForm.username = res.data.username || "";
     infoForm.nickname = res.data.nickname || "";
     infoForm.avatar = res.data.avatar || "";
@@ -193,7 +184,6 @@ const fetchUserInfo = async () => {
   }
 };
 
-// 更新基本信息
 const handleUpdateInfo = async () => {
   if (!infoFormRef.value) return;
   await infoFormRef.value.validate(async valid => {
@@ -204,9 +194,13 @@ const handleUpdateInfo = async () => {
         const res = await updateCurrentUser(updateData);
         if (res.code === 200) {
           message("修改成功", { type: "success" });
-          // 更新 store 中的用户信息
           if (infoForm.nickname) userStore.SET_NICKNAME(infoForm.nickname);
           if (infoForm.avatar) userStore.SET_AVATAR(infoForm.avatar);
+          // 同步写入 USER_KEY 本地缓存，避免刷新页面后昵称/头像回退
+          updateUserInfoCache({
+            nickname: infoForm.nickname,
+            avatar: infoForm.avatar
+          });
           fetchUserInfo();
         } else {
           message(res.message, { type: "error" });
@@ -218,7 +212,6 @@ const handleUpdateInfo = async () => {
   });
 };
 
-// 修改密码
 const handleUpdatePassword = async () => {
   if (!pwdFormRef.value) return;
   await pwdFormRef.value.validate(async valid => {
@@ -231,11 +224,9 @@ const handleUpdatePassword = async () => {
         });
         if (res.code === 200) {
           message("密码修改成功，请重新登录", { type: "success" });
-          // 重置表单
           pwdForm.oldPassword = "";
           pwdForm.newPassword = "";
           pwdForm.confirmPassword = "";
-          // 延迟登出
           setTimeout(() => {
             userStore.logOut();
           }, 1500);

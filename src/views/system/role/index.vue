@@ -29,6 +29,7 @@
               </el-form-item>
             </el-form>
             <el-button
+              v-perms="'system:role:add'"
               type="primary"
               :icon="useRenderIcon(AddFill)"
               @click="handleAdd"
@@ -39,7 +40,6 @@
         </div>
       </template>
 
-      <!-- 表格 -->
       <el-table
         v-loading="loading"
         :data="dataList"
@@ -65,6 +65,7 @@
             <template v-else-if="col.slot === 'operation'">
               <el-button
                 v-if="row.roleCode !== 'admin'"
+                v-perms="'system:role:edit'"
                 link
                 type="primary"
                 :icon="useRenderIcon(EditPen)"
@@ -74,6 +75,7 @@
               </el-button>
               <el-button
                 v-if="row.roleCode !== 'admin'"
+                v-perms="'system:role:assign'"
                 link
                 type="success"
                 :icon="useRenderIcon(MenuIcon)"
@@ -83,6 +85,7 @@
               </el-button>
               <el-button
                 v-if="row.roleCode !== 'admin'"
+                v-perms="'system:role:delete'"
                 link
                 type="danger"
                 :icon="useRenderIcon(Delete)"
@@ -98,7 +101,6 @@
         </el-table-column>
       </el-table>
 
-      <!-- 分页 -->
       <div class="pagination-container">
         <el-pagination
           v-model:current-page="currentPage"
@@ -111,7 +113,6 @@
         />
       </div>
 
-      <!-- 角色表单弹窗 -->
       <el-dialog
         v-model="dialogVisible"
         :title="dialogTitle"
@@ -161,7 +162,6 @@
         </template>
       </el-dialog>
 
-      <!-- 权限设置弹窗 -->
       <el-dialog
         v-model="permDialogVisible"
         :title="permDialogTitle"
@@ -176,6 +176,7 @@
             node-key="id"
             show-checkbox
             default-expand-all
+            @check="handleTreeCheck"
           />
         </div>
         <template #footer>
@@ -190,9 +191,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, nextTick } from "vue";
+import { ref, reactive, nextTick } from "vue";
 import { message } from "@/utils/message";
 import { useRenderIcon } from "@/components/ReIcon/src/hooks";
+import { useCrudPage } from "@/hooks/useCrudPage";
 import {
   getRoleList,
   createRole,
@@ -214,16 +216,27 @@ import MenuIcon from "~icons/ep/menu";
 
 defineOptions({ name: "SystemRole" });
 
-const loading = ref(false);
-const dataList = ref<RoleInfo[]>([]);
-const total = ref(0);
-const currentPage = ref(1);
-const pageSize = ref(20);
 const keyword = ref("");
 
-// 角色表单
-const dialogVisible = ref(false);
-const dialogTitle = ref("");
+const {
+  loading,
+  dataList,
+  total,
+  currentPage,
+  pageSize,
+  dialogVisible,
+  dialogTitle,
+  fetchData,
+  handleSearch,
+  handleSizeChange,
+  handleCurrentChange
+} = useCrudPage<RoleInfo>({
+  fetchApi: getRoleList,
+  buildParams: () => ({
+    keyword: keyword.value || undefined
+  })
+});
+
 const formRef = ref<FormInstance>();
 const formData = reactive<Partial<RoleInfo>>({
   id: undefined,
@@ -234,7 +247,6 @@ const formData = reactive<Partial<RoleInfo>>({
   status: 1
 });
 
-// 权限表单
 const permDialogVisible = ref(false);
 const permDialogTitle = ref("");
 const currentRoleId = ref<number>(0);
@@ -262,23 +274,6 @@ const columns = [
   { label: "操作", fixed: "right", width: 280, slot: "operation" }
 ];
 
-const fetchData = async () => {
-  loading.value = true;
-  try {
-    const res = await getRoleList({
-      page: currentPage.value,
-      pageSize: pageSize.value,
-      keyword: keyword.value || undefined
-    });
-    if (res.code === 200) {
-      dataList.value = res.data.list;
-      total.value = res.data.total;
-    }
-  } finally {
-    loading.value = false;
-  }
-};
-
 const handleAdd = () => {
   dialogTitle.value = "新增角色";
   resetForm();
@@ -291,49 +286,76 @@ const handleEdit = (row: RoleInfo) => {
   dialogVisible.value = true;
 };
 
-// 打开权限设置弹窗
 const handlePermission = async (row: RoleInfo) => {
   currentRoleId.value = row.id;
   permDialogTitle.value = `设置权限 - ${row.roleName}`;
 
-  // 获取菜单树
   const menuRes = await getMenuTree();
   if (menuRes.code === 200) {
     menuTreeData.value = menuRes.data;
   }
 
-  // 获取角色已有权限
   const roleMenuRes = await getRoleMenus(row.id);
 
   permDialogVisible.value = true;
 
-  // 在 DOM 更新后设置选中的节点
-  // 使用 leafOnly=true，只设置叶子节点选中状态，父节点会根据子节点自动计算
+  // 注意：setCheckedKeys 的 leafOnly 模式遇到非叶子 key 会先深选其整个子树，
+  // 因此只能传叶子 key（父级 id 入库是策略生成所需，不能直接回填给树）
   if (roleMenuRes.code === 200) {
     nextTick(() => {
-      menuTreeRef.value?.setCheckedKeys(roleMenuRes.data, true);
+      const keys: number[] = roleMenuRes.data || [];
+      const leafKeys = keys.filter(key => {
+        const node = menuTreeRef.value?.getNode(key);
+        return node?.isLeaf;
+      });
+      menuTreeRef.value?.setCheckedKeys(leafKeys, true);
     });
   }
 };
 
-// 保存权限设置
+const handleTreeCheck = (nodeData: MenuInfo) => {
+  const tree = menuTreeRef.value;
+  if (!tree) return;
+
+  const node = tree.getNode(nodeData.id);
+  if (!node || nodeData.menuType !== 3) return;
+
+  const isView = nodeData.perm?.endsWith(":view");
+
+  if (isView && !node.checked) {
+    // 取消“查看”时，应同时取消同菜单下的所有操作按钮
+    node.parent?.childNodes.forEach((child: any) => {
+      if (
+        child.data.id !== nodeData.id &&
+        child.data.menuType === 3 &&
+        child.checked
+      ) {
+        tree.setChecked(child.data.id, false, false);
+      }
+    });
+  } else if (!isView && node.checked) {
+    // 勾选操作按钮时，必须同时勾选同菜单下的“查看”按钮
+    const viewSibling = node.parent?.childNodes.find((child: any) =>
+      child.data.perm?.endsWith(":view")
+    );
+    if (viewSibling && !viewSibling.checked) {
+      tree.setChecked(viewSibling.data.id, true, false);
+    }
+  }
+};
+
 const handleSavePermission = async () => {
   if (!menuTreeRef.value) return;
 
-  // 获取所有选中的节点（包括叶子节点和父节点）
+  // 全选节点（含全选的目录/菜单）与半选节点一并保存。
+  // 不能只保存叶子节点：全选的父节点会被漏掉，菜单本体不授权，
+  // 角色会"能看到菜单却没有查看权限"
   const checkedKeys = menuTreeRef.value.getCheckedKeys(false);
-
-  // 过滤出叶子节点（没有子节点的菜单）
-  // 只保存叶子节点的权限，父目录的选中状态由子节点决定
-  const leafKeys = checkedKeys.filter((key: number) => {
-    const node = menuTreeRef.value.getNode(key);
-    // 如果是叶子节点（没有子节点或者是按钮类型）则保存
-    return node && (!node.childNodes || node.childNodes.length === 0);
-  });
+  const halfKeys = menuTreeRef.value.getHalfCheckedKeys();
 
   const res = await setRoleMenus({
     roleId: currentRoleId.value,
-    menuIds: leafKeys
+    menuIds: [...new Set([...checkedKeys, ...halfKeys])]
   });
 
   if (res.code === 200) {
@@ -397,30 +419,11 @@ const resetForm = () => {
   formRef.value?.resetFields();
 };
 
-const handleSearch = () => {
-  currentPage.value = 1;
-  fetchData();
-};
-
 const handleReset = () => {
   keyword.value = "";
   currentPage.value = 1;
   fetchData();
 };
-
-const handleSizeChange = (val: number) => {
-  pageSize.value = val;
-  fetchData();
-};
-
-const handleCurrentChange = (val: number) => {
-  currentPage.value = val;
-  fetchData();
-};
-
-onMounted(() => {
-  fetchData();
-});
 </script>
 
 <style scoped lang="scss">

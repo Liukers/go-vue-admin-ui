@@ -27,7 +27,6 @@ const IFrame = () => import("@/layout/frame.vue");
 // https://cn.vitejs.dev/guide/features.html#glob-import
 const modulesRoutes = import.meta.glob("/src/views/**/*.{vue,tsx}");
 
-// 动态路由
 import { getAsyncRoutes } from "@/api/routes";
 
 function handRank(routeInfo: any) {
@@ -100,29 +99,22 @@ function filterNoPermissionTree(data: RouteComponent[]) {
 
 // 通过指定 `key` 获取父级路径集合，默认 `key` 为 `path`
 function getParentPaths(value: string, routes: RouteRecordRaw[], key = "path") {
-  // 深度遍历查找
   function dfs(routes: RouteRecordRaw[], value: string, parents: string[]) {
     for (let i = 0; i < routes.length; i++) {
       const item = routes[i];
-      // 返回父级path
       if (item[key] === value) return parents;
-      // children不存在或为空则不递归
       if (!item.children || !item.children.length) continue;
-      // 往下查找时将当前path入栈
       parents.push(item.path);
 
       if (dfs(item.children, value, parents).length) return parents;
-      // 深度遍历查找未找到时当前path 出栈
       parents.pop();
     }
-    // 未找到时返回空数组
     return [];
   }
 
   return dfs(routes, value, []);
 }
 
-// 查找对应 `path` 的路由信息
 function findRouteByPath(path: string, routes: RouteRecordRaw[]) {
   let res = routes.find((item: { path: string }) => item.path == path);
   if (res) {
@@ -175,7 +167,6 @@ function handleAsyncRoutes(routeList) {
         } else {
           // 切记将路由push到routes后还需要使用addRoute，这样路由才能正常跳转
           router.options.routes[0].children.push(v);
-          // 最终路由进行升序
           ascending(router.options.routes[0].children);
           if (!router.hasRoute(v?.name)) router.addRoute(v);
           const flattenRouters: any = router
@@ -203,7 +194,6 @@ function handleAsyncRoutes(routeList) {
 // 初始化路由（`new Promise` 写法防止在异步请求中造成无限循环）
 function initRouter() {
   if (getConfig()?.CachingAsyncRoutes) {
-    // 开启动态路由缓存本地localStorage
     const key = "async-routes";
     const asyncRouteList = storageLocal().getItem(key) as any;
     if (asyncRouteList && asyncRouteList?.length > 0) {
@@ -221,7 +211,6 @@ function initRouter() {
             resolve(router);
           })
           .catch(error => {
-            // 如果获取动态路由失败，清除登录信息并跳转到登录页
             const { response } = error;
             if (response?.status >= 500) {
               message("服务器错误，请稍后重试", { type: "error" });
@@ -241,7 +230,6 @@ function initRouter() {
           resolve(router);
         })
         .catch(error => {
-          // 如果获取动态路由失败，清除登录信息并跳转到登录页
           const { response } = error;
           if (response?.status >= 500) {
             message("服务器错误，请稍后重试", { type: "error" });
@@ -399,7 +387,6 @@ function getAuths(): Array<string> {
 // 是否有按钮级别的权限（根据路由`meta`中的`auths`字段进行判断）
 function hasAuth(value: string | Array<string>): boolean {
   if (!value) return false;
-  // 从当前路由的`meta`字段里获取按钮级别的所有自定义`code`值
   const metaAuths = getAuths();
   if (!metaAuths) return false;
   const isAuths = isString(value)
@@ -420,7 +407,6 @@ function handleTopMenu(route) {
   }
 }
 
-// 获取所有菜单中的第一个菜单（顶级菜单）
 function getTopMenu(tag = false): menuType {
   const topMenu = handleTopMenu(
     usePermissionStoreHook().wholeMenus[0]?.children[0]

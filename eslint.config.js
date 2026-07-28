@@ -56,7 +56,7 @@ export default defineConfig([
     rules: {
       ...configPrettier.rules,
       ...pluginPrettier.configs.recommended.rules,
-      "no-debugger": "off",
+      "no-debugger": "error",
       "no-unused-vars": [
         "error",
         {

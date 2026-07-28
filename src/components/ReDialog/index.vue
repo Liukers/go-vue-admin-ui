@@ -11,7 +11,6 @@
     @openAutoFocus="eventsCallBack('openAutoFocus', options, index)"
     @closeAutoFocus="eventsCallBack('closeAutoFocus', options, index)"
   >
-    <!-- header -->
     <template
       v-if="options?.fullscreenIcon || options?.headerRenderer"
       #header="{ close, titleId, titleClass }"
@@ -58,7 +57,6 @@
       :is="options.contentRenderer({ options, index })"
       @close="args => handleClose(options, index, args)"
     />
-    <!-- footer -->
     <template v-if="!options?.hideFooter" #footer>
       <template v-if="options?.footerRenderer">
         <component :is="options?.footerRenderer({ options, index })" />

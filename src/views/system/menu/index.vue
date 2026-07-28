@@ -6,6 +6,7 @@
           <span class="font-medium">菜单管理</span>
           <div class="operation-area">
             <el-button
+              v-perms="'system:menu:add'"
               type="primary"
               :icon="useRenderIcon(AddFill)"
               @click="handleAdd()"
@@ -19,7 +20,6 @@
         </div>
       </template>
 
-      <!-- 表格 -->
       <el-table
         v-loading="loading"
         :data="dataList"
@@ -61,6 +61,7 @@
             </template>
             <template v-else-if="col.slot === 'operation'">
               <el-button
+                v-perms="'system:menu:add'"
                 link
                 type="primary"
                 :icon="useRenderIcon(AddFill)"
@@ -69,6 +70,7 @@
                 新增
               </el-button>
               <el-button
+                v-perms="'system:menu:edit'"
                 link
                 type="primary"
                 :icon="useRenderIcon(EditPen)"
@@ -77,6 +79,7 @@
                 编辑
               </el-button>
               <el-button
+                v-perms="'system:menu:delete'"
                 link
                 type="danger"
                 :icon="useRenderIcon(Delete)"
@@ -92,7 +95,6 @@
         </el-table-column>
       </el-table>
 
-      <!-- 弹窗表单 -->
       <el-dialog
         v-model="dialogVisible"
         :title="dialogTitle"
@@ -153,7 +155,11 @@
           <el-form-item v-if="formData.menuType !== 3" label="图标">
             <el-input v-model="formData.icon" placeholder="请输入图标名称" />
           </el-form-item>
-          <el-form-item label="路由路径" prop="path">
+          <el-form-item
+            v-if="formData.menuType !== 3"
+            label="路由路径"
+            prop="path"
+          >
             <el-input v-model="formData.path" placeholder="请输入路由路径" />
           </el-form-item>
           <el-form-item
@@ -171,6 +177,20 @@
               v-model="formData.perm"
               placeholder="请输入权限标识，如：system:user:list"
             />
+          </el-form-item>
+          <el-form-item v-if="formData.menuType !== 1" label="接口路径">
+            <el-input
+              v-model="formData.apiPath"
+              placeholder="如：/api/v1/system/users 或 /api/v1/system/users/:id"
+            />
+          </el-form-item>
+          <el-form-item v-if="formData.menuType !== 1" label="请求方式">
+            <el-select v-model="formData.method" style="width: 100%">
+              <el-option label="GET" value="GET" />
+              <el-option label="POST" value="POST" />
+              <el-option label="PUT" value="PUT" />
+              <el-option label="DELETE" value="DELETE" />
+            </el-select>
           </el-form-item>
           <el-form-item label="排序">
             <el-input-number v-model="formData.sort" :min="0" />
@@ -225,24 +245,27 @@ const formData = reactive<Partial<MenuInfo>>({
   path: "",
   component: "",
   perm: "",
+  apiPath: "",
+  method: "GET",
   sort: 0,
   status: 1
 });
 
-// 可选的上级菜单（只显示目录类型）
 const parentMenuOptions = computed(() => {
   const options = [{ id: 0, menuName: "顶级菜单" }];
-  const findDirectories = (menus: MenuInfo[]) => {
+  // 按钮的父级是菜单，菜单/目录的父级是目录
+  const wantType = formData.menuType === 3 ? 2 : 1;
+  const findCandidates = (menus: MenuInfo[]) => {
     menus.forEach(menu => {
-      if (menu.menuType === 1) {
+      if (menu.menuType === wantType) {
         options.push(menu);
         if (menu.children) {
-          findDirectories(menu.children);
+          findCandidates(menu.children);
         }
       }
     });
   };
-  findDirectories(dataList.value);
+  findCandidates(dataList.value);
   return options;
 });
 
@@ -252,7 +275,20 @@ const currentParentMenu = ref<MenuInfo | null>(null);
 const rules: FormRules = {
   menuName: [{ required: true, message: "请输入菜单名称", trigger: "blur" }],
   menuType: [{ required: true, message: "请选择菜单类型", trigger: "change" }],
-  path: [{ required: true, message: "请输入路由路径", trigger: "blur" }],
+  path: [
+    {
+      required: true,
+      message: "请输入路由路径",
+      trigger: "blur",
+      validator: (rule, value, callback) => {
+        if (formData.menuType !== 3 && !value) {
+          callback(new Error("请输入路由路径"));
+        } else {
+          callback();
+        }
+      }
+    }
+  ],
   component: [
     {
       required: true,
@@ -298,12 +334,11 @@ const handleAdd = (row?: MenuInfo) => {
   resetForm();
   currentParentMenu.value = null;
   if (row) {
-    // 如果是添加子菜单，设置父级ID
     formData.parentId = row.id;
-    currentParentMenu.value = row; // 保存当前选中的父菜单，确保能正确显示
+    currentParentMenu.value = row;
     // 在一级目录下新增，默认类型应该是菜单（2），而不是目录（1）
     // 二级菜单下新增，也只能是菜单或按钮
-    formData.menuType = 2; // 默认为菜单
+    formData.menuType = 2;
   }
   dialogVisible.value = true;
 };
@@ -315,7 +350,6 @@ const handleEdit = (row: MenuInfo) => {
 };
 
 const handleDelete = (row: MenuInfo) => {
-  // 检查是否有子菜单
   if (row.children && row.children.length > 0) {
     message(`菜单 "${row.menuName}" 下存在子菜单，无法删除`, {
       type: "warning"
@@ -342,15 +376,21 @@ const handleSubmit = async () => {
   if (!formRef.value) return;
   await formRef.value.validate(async valid => {
     if (valid) {
-      // 准备提交的数据
       const submitData = { ...formData };
 
-      // 目录类型或按钮类型，清空组件路径
       if (submitData.menuType !== 2) {
         submitData.component = "";
       }
 
-      // 确保路径以 / 开头
+      if (submitData.menuType === 1) {
+        submitData.apiPath = "";
+        submitData.method = "";
+      }
+
+      if (submitData.menuType === 3) {
+        submitData.path = "";
+      }
+
       if (submitData.path && !submitData.path.startsWith("/")) {
         submitData.path = "/" + submitData.path;
       }
@@ -387,6 +427,8 @@ const resetForm = () => {
   formData.path = "";
   formData.component = "";
   formData.perm = "";
+  formData.apiPath = "";
+  formData.method = "GET";
   formData.sort = 0;
   formData.status = 1;
 

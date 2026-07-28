@@ -143,7 +143,7 @@ VITE_PROXY_TARGET = http://localhost:8080
 
 ```env
 # 线上环境接口地址（根据实际后端地址配置）
-VITE_API_BASE_URL = http://your-backend-domain.com/api
+VITE_API_BASE_URL = https://your-backend-domain.com/api
 ```
 
 生产构建默认启用 gzip 压缩，可通过 `VITE_COMPRESSION` 配置调整。
@@ -274,11 +274,11 @@ pnpm dev  # 启动前端 (端口 8848)
 | 菜单类型 | 目录/菜单/按钮     | 目录包含子菜单，菜单对应页面 |
 | 路由路径 | /system/user       | 前端路由地址                 |
 | 组件路径 | /system/user/index | 对应 Vue 文件路径            |
-| 权限标识 | system:user:list   | 用于按钮级权限控制           |
+| 权限标识 | system:user:view   | 用于按钮级权限控制           |
 
 **4. 分配权限**
 
-角色管理 → 选择角色 → 勾选对应菜单权限
+角色管理 → 选择角色 → 勾选对应菜单权限（每个菜单下的 `查看` 按钮控制列表访问，只勾 `查看` 即为只读角色，增删改按钮按需勾选）
 
 ### 菜单类型说明
 

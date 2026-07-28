@@ -120,8 +120,6 @@ function hoverDescription(event, description) {
   justify-content: space-between;
   padding: 12px 0;
 
-  // border-bottom: 1px solid #f0f0f0;
-
   .notice-container-avatar {
     margin-right: 16px;
     background: #fff;

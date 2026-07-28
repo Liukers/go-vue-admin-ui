@@ -1,6 +1,5 @@
 <template>
   <div class="welcome-container">
-    <!-- 顶部欢迎卡片 -->
     <div class="welcome-card">
       <div class="welcome-content">
         <div class="welcome-header">
@@ -21,9 +20,7 @@
       <div class="welcome-decoration" />
     </div>
 
-    <!-- 快捷入口和登录信息 -->
     <div class="bottom-section">
-      <!-- 快捷入口 -->
       <el-card shadow="never" class="quick-links-card">
         <template #header>
           <div class="card-header-title">
@@ -51,7 +48,6 @@
         </div>
       </el-card>
 
-      <!-- 登录信息 -->
       <el-card shadow="never" class="login-info-card">
         <template #header>
           <div class="card-header-title">
@@ -90,14 +86,13 @@ import { usePermissionStoreHook } from "@/store/modules/permission";
 import { useRouter } from "vue-router";
 import { useRenderIcon } from "@/components/ReIcon/src/hooks";
 import { getLoginLogList } from "@/api/system";
+import { hasPerms } from "@/utils/auth";
 
-// 图标
 import User from "~icons/ri/user-3-line";
 import Role from "~icons/ri/shield-user-line";
 import Time from "~icons/ri/time-line";
 import Calendar from "~icons/ri/calendar-line";
 
-// 菜单图标映射
 import Home from "~icons/ri/home-4-line";
 import UserManage from "~icons/ri/user-settings-line";
 import RoleManage from "~icons/ri/admin-line";
@@ -115,24 +110,20 @@ const router = useRouter();
 const userStore = useUserStoreHook();
 const permissionStore = usePermissionStoreHook();
 
-// 当前时间
 const currentTime = ref("");
 const currentDate = ref("");
 
-// 登录信息
 const loginInfo = ref({
   username: "",
   loginTime: "",
   currentTime: ""
 });
 
-// 获取用户信息
 const nickname = computed(
   () => userStore.nickname || userStore.username || "管理员"
 );
 const roles = computed(() => userStore.roles || []);
 
-// 格式化角色显示
 const roleName = computed(() => {
   if (roles.value.includes("admin") || roles.value.includes("超级管理员")) {
     return "超级管理员";
@@ -140,7 +131,6 @@ const roleName = computed(() => {
   return roles.value[0] || "普通用户";
 });
 
-// 图标名称到组件的映射
 const iconComponents: Record<string, any> = {
   "ri:home-4-line": Home,
   "ri:user-settings-line": UserManage,
@@ -152,7 +142,6 @@ const iconComponents: Record<string, any> = {
   "ri:settings-4-line": Setting
 };
 
-// 默认颜色配置（按顺序循环使用）
 const colorPalette = [
   { color: "#1890ff", bg: "#e6f7ff" },
   { color: "#52c41a", bg: "#f6ffed" },
@@ -164,29 +153,23 @@ const colorPalette = [
   { color: "#595959", bg: "#f5f5f5" }
 ];
 
-// 获取可访问的菜单（快捷入口）
 const quickLinks = computed(() => {
   const menus = permissionStore.wholeMenus || [];
   const links: any[] = [];
   let colorIndex = 0;
 
   const processMenu = (menu: any) => {
-    // 处理目录下的子菜单
     if (menu.children && menu.children.length > 0) {
       menu.children.forEach((child: any) => {
         if (child.path && child.meta?.title && !child.meta?.hidden) {
-          // 避免重复添加
           if (links.find(l => l.path === child.path)) {
             return;
           }
 
-          // 从菜单的 meta.icon 获取图标
           const iconName = child.meta?.icon || "";
           let iconComponent = iconComponents[iconName];
 
-          // 如果没有找到匹配的图标，使用默认图标
           if (!iconComponent) {
-            // 尝试根据路径关键词匹配
             const path = child.path.toLowerCase();
             if (path.includes("user")) iconComponent = UserManage;
             else if (path.includes("role")) iconComponent = RoleManage;
@@ -198,7 +181,6 @@ const quickLinks = computed(() => {
             else iconComponent = DefaultIcon;
           }
 
-          // 分配颜色（循环使用调色板）
           const colors = colorPalette[colorIndex % colorPalette.length];
           colorIndex++;
 
@@ -217,7 +199,6 @@ const quickLinks = computed(() => {
   return links.slice(0, 14);
 });
 
-// 更新时间和日期
 const updateTime = () => {
   const now = new Date();
   const days = [
@@ -240,8 +221,9 @@ const updateTime = () => {
   loginInfo.value.currentTime = `${currentDate.value} ${currentTime.value}`;
 };
 
-// 获取最近登录时间
 const fetchLoginTime = async () => {
+  // 无登录日志查看权限的角色直接跳过（避免后端拒绝并触发统一无权限提示）
+  if (!hasPerms("system:log:login:view")) return;
   try {
     const res = await getLoginLogList({ page: 1, pageSize: 1 });
     if (res.code === 200 && res.data.list.length > 0) {
@@ -254,7 +236,6 @@ const fetchLoginTime = async () => {
   }
 };
 
-// 跳转到快捷入口
 const handleQuickLink = (path: string) => {
   router.push(path);
 };
@@ -289,7 +270,6 @@ onUnmounted(() => {
   }
 }
 
-// 响应式
 @media (width <= 768px) {
   .bottom-section {
     grid-template-columns: 1fr;
@@ -363,9 +343,6 @@ onUnmounted(() => {
   border-radius: 50%;
 }
 
-// 主内容区
-
-// 快捷入口卡片
 .quick-links-card {
   :deep(.el-card__header) {
     padding: 15px 20px;
@@ -427,7 +404,6 @@ onUnmounted(() => {
   text-align: center;
 }
 
-// 登录信息卡片
 .login-info-card {
   height: fit-content;
 
@@ -468,7 +444,6 @@ onUnmounted(() => {
   margin: 8px 0;
 }
 
-// 底部区域（快捷入口 + 登录信息）
 .bottom-section {
   display: grid;
   grid-template-columns: 1fr 320px;
@@ -480,5 +455,5 @@ onUnmounted(() => {
   padding: 40px 0;
   color: var(--el-text-color-secondary);
   text-align: center;
-} // 顶部欢迎卡片
+}
 </style>

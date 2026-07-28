@@ -40,6 +40,7 @@
               </el-form-item>
             </el-form>
             <el-button
+              v-perms="'system:user:add'"
               type="primary"
               :icon="useRenderIcon(AddFill)"
               @click="handleAdd"
@@ -50,7 +51,6 @@
         </div>
       </template>
 
-      <!-- 表格 -->
       <el-table
         v-loading="loading"
         :data="dataList"
@@ -79,6 +79,7 @@
             <template v-else-if="col.slot === 'operation'">
               <el-button
                 v-if="row.username !== 'admin'"
+                v-perms="'system:user:edit'"
                 link
                 type="primary"
                 :icon="useRenderIcon(EditPen)"
@@ -87,6 +88,7 @@
                 编辑
               </el-button>
               <el-button
+                v-perms="'system:user:resetPwd'"
                 link
                 type="warning"
                 :icon="useRenderIcon(Key)"
@@ -96,6 +98,7 @@
               </el-button>
               <el-button
                 v-if="row.username !== 'admin'"
+                v-perms="'system:user:delete'"
                 link
                 type="danger"
                 :icon="useRenderIcon(Delete)"
@@ -111,7 +114,6 @@
         </el-table-column>
       </el-table>
 
-      <!-- 分页 -->
       <div class="pagination-container">
         <el-pagination
           v-model:current-page="currentPage"
@@ -124,7 +126,6 @@
         />
       </div>
 
-      <!-- 弹窗表单 -->
       <el-dialog
         v-model="dialogVisible"
         :title="dialogTitle"
@@ -195,6 +196,8 @@
 import { ref, reactive, onMounted } from "vue";
 import { message } from "@/utils/message";
 import { useRenderIcon } from "@/components/ReIcon/src/hooks";
+import { useCrudPage } from "@/hooks/useCrudPage";
+import { REGEXP_PWD } from "@/utils/formRules";
 import {
   getUserList,
   createUser,
@@ -212,22 +215,31 @@ import Search from "~icons/ep/search";
 import Refresh from "~icons/ep/refresh";
 import Key from "~icons/ep/key";
 
-// 密码正则（密码格式应为8-18位数字、字母、符号的任意两种组合）
-const REGEXP_PWD =
-  /^(?![0-9]+$)(?![a-z]+$)(?![A-Z]+$)(?!([^(0-9a-zA-Z)]|[()])+$)(?!^.*[\u4E00-\u9FA5].*$)([^(0-9a-zA-Z)]|[()]|[a-z]|[A-Z]|[0-9]){8,18}$/;
-
 defineOptions({ name: "SystemUser" });
 
-const loading = ref(false);
-const dataList = ref<UserInfo[]>([]);
-const total = ref(0);
-const currentPage = ref(1);
-const pageSize = ref(20);
 const keyword = ref("");
 const status = ref<number | null>(null);
 
-const dialogVisible = ref(false);
-const dialogTitle = ref("");
+const {
+  loading,
+  dataList,
+  total,
+  currentPage,
+  pageSize,
+  dialogVisible,
+  dialogTitle,
+  fetchData,
+  handleSearch,
+  handleSizeChange,
+  handleCurrentChange
+} = useCrudPage<UserInfo>({
+  fetchApi: getUserList,
+  buildParams: () => ({
+    keyword: keyword.value || undefined,
+    status: status.value ?? undefined
+  })
+});
+
 const formRef = ref<FormInstance>();
 const formData = reactive<Partial<UserInfo> & { password?: string }>({
   id: undefined,
@@ -283,24 +295,6 @@ const columns = [
   { label: "操作", fixed: "right", width: 260, slot: "operation" }
 ];
 
-const fetchData = async () => {
-  loading.value = true;
-  try {
-    const res = await getUserList({
-      page: currentPage.value,
-      pageSize: pageSize.value,
-      keyword: keyword.value || undefined,
-      status: status.value ?? undefined
-    });
-    if (res.code === 200) {
-      dataList.value = res.data.list;
-      total.value = res.data.total;
-    }
-  } finally {
-    loading.value = false;
-  }
-};
-
 const fetchRoleList = async () => {
   const res = await getRoleOptions();
   if (res.code === 200) {
@@ -337,7 +331,6 @@ const handleDelete = (row: UserInfo) => {
   });
 };
 
-// 重置密码
 const handleResetPassword = (row: UserInfo) => {
   ElMessageBox.prompt(`请输入用户 "${row.username}" 的新密码`, "重置密码", {
     confirmButtonText: "确定",
@@ -403,11 +396,6 @@ const resetForm = () => {
   formRef.value?.resetFields();
 };
 
-const handleSearch = () => {
-  currentPage.value = 1;
-  fetchData();
-};
-
 const handleReset = () => {
   keyword.value = "";
   status.value = null;
@@ -415,18 +403,7 @@ const handleReset = () => {
   fetchData();
 };
 
-const handleSizeChange = (val: number) => {
-  pageSize.value = val;
-  fetchData();
-};
-
-const handleCurrentChange = (val: number) => {
-  currentPage.value = val;
-  fetchData();
-};
-
 onMounted(() => {
-  fetchData();
   fetchRoleList();
 });
 </script>

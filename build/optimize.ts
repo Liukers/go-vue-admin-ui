@@ -21,8 +21,7 @@ const include = [
   "@pureadmin/utils",
   "responsive-storage",
   "element-plus",
-  "@element-plus/icons-vue",
-  "echarts"
+  "@element-plus/icons-vue"
 ];
 
 /**

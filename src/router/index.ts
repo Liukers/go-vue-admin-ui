@@ -5,6 +5,7 @@ import { buildHierarchyTree } from "@/utils/tree";
 import remainingRouter from "./modules/remaining";
 import { useMultiTagsStoreHook } from "@/store/modules/multiTags";
 import { usePermissionStoreHook } from "@/store/modules/permission";
+import { useUserStoreHook } from "@/store/modules/user";
 import {
   isUrl,
   openLink,
@@ -72,7 +73,6 @@ export const remainingPaths = Object.keys(remainingRouter).map(v => {
   return remainingRouter[v].path;
 });
 
-// 创建路由实例
 export const router: Router = createRouter({
   history: getHistoryMode(import.meta.env.VITE_ROUTER_HISTORY),
   routes: constantRoutes.concat(...(remainingRouter as any)),
@@ -94,15 +94,12 @@ export const router: Router = createRouter({
   }
 });
 
-// 记录已经加载的页面路径
 const loadedPaths = new Set<string>();
 
-// 重置已加载页面记录
 export function resetLoadedPaths() {
   loadedPaths.clear();
 }
 
-// 重置路由
 export function resetRouter() {
   router.clearRoutes();
   for (const route of initConstantRoutes.concat(...(remainingRouter as any))) {
@@ -115,7 +112,6 @@ export function resetRouter() {
   resetLoadedPaths();
 }
 
-// 路由白名单
 const whiteList = ["/login"];
 
 const { VITE_HIDE_HOME } = import.meta.env;
@@ -150,7 +146,10 @@ router.beforeEach((to: ToRouteType, _from, next) => {
   }
   if (Cookies.get(multipleTabsKey) && userInfo) {
     // 无权限跳转403页面
-    if (to.meta?.roles && !isOneOfArray(to.meta?.roles, userInfo?.roles)) {
+    if (
+      to.meta?.roles &&
+      !isOneOfArray(to.meta?.roles, useUserStoreHook().roles)
+    ) {
       next({ path: "/error/403" });
     }
     // 开启隐藏首页后在浏览器地址栏手动输入首页welcome路由则跳转到404页面
