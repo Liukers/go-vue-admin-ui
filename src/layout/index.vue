@@ -23,7 +23,6 @@
     >
       <div v-if="set.fixedHeader">
         <LayHeader />
-        <!-- 主体内容 -->
         <LayContent :fixed-header="set.fixedHeader" />
       </div>
       <el-scrollbar v-else>
@@ -34,7 +33,6 @@
           <BackTopIcon />
         </el-backtop>
         <LayHeader />
-        <!-- 主体内容 -->
         <LayContent :fixed-header="set.fixedHeader" />
       </el-scrollbar>
     </div>

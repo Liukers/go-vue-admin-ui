@@ -67,7 +67,6 @@ function handleTo() {
 }
 
 function resizeResult() {
-  // el-scrollbar max-height="calc(90vh - 140px)"
   innerHeight.value = window.innerHeight - window.innerHeight / 10 - 140;
 }
 

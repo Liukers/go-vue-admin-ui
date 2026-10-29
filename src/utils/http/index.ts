@@ -39,7 +39,7 @@ const DEFAULT_EXPIRES_IN = 60 * 60 * 1000;
  * 解析 JWT payload 的 `exp` 字段，得到过期时间戳（毫秒）
  * 解析失败时回退为当前时间 + 1 小时
  */
-const parseTokenExpires = (token: string): number => {
+export const parseTokenExpires = (token: string): number => {
   const fallback = new Date().getTime() + DEFAULT_EXPIRES_IN;
   try {
     const payload = token.split(".")[1];
@@ -98,7 +98,7 @@ class PureHttp {
           PureHttp.initConfig.beforeRequestCallback(config);
           return config;
         }
-        // 请求白名单，放置一些不需要`token`的接口（通过设置请求白名单，防止`token`过期后再请求造成的死循环问题）
+        // 无需 token 的接口白名单，防止 token 过期后请求死循环
         const whiteList = [
           "/v1/system/login",
           "/v1/system/refresh-token",
@@ -115,13 +115,25 @@ class PureHttp {
                 const now = new Date().getTime();
                 const expired = parseInt(String(data.expires)) - now <= 0;
                 if (expired) {
+                  // accessToken 过期，尝试用 refreshToken 续期
+                  const refreshExpired =
+                    parseInt(String(data.refreshExpires)) - now <= 0;
+                  if (refreshExpired || !data.refreshToken) {
+                    // refreshToken 也已过期或不存在，强制登出并中断请求
+                    useUserStoreHook().logOut();
+                    message("登录已过期，请重新登录", { type: "warning" });
+                    resolve(Promise.reject(new Error("登录已过期")));
+                    return;
+                  }
+
                   if (!PureHttp.isRefreshing) {
                     PureHttp.isRefreshing = true;
                     useUserStoreHook()
                       .handRefreshToken({
                         accessToken: data.accessToken,
                         refreshToken: data.refreshToken,
-                        expires: parseInt(String(data.expires))
+                        expires: parseInt(String(data.expires)),
+                        refreshExpires: parseInt(String(data.refreshExpires))
                       })
                       .then(res => {
                         const token = res.data.accessToken;

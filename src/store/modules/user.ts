@@ -23,6 +23,12 @@ import {
   getToken
 } from "@/utils/auth";
 
+const REMEMBER_KEY = "user-remember";
+
+// 标记「通知后端登出」正在进行，防止登出请求返回 401/2003 时
+// 响应拦截器再次调用 logOut 造成重复清状态与重复导航
+let isNotifyingLogout = false;
+
 export const useUserStore = defineStore("pure-user", {
   state: (): UserType => ({
     avatar: storageLocal().getItem<DataInfo<number>>(USER_KEY)?.avatar ?? "",
@@ -35,10 +41,13 @@ export const useUserStore = defineStore("pure-user", {
     // 按钮级别权限
     permissions:
       storageLocal().getItem<DataInfo<number>>(USER_KEY)?.permissions ?? [],
-    // 是否勾选了登录页的免登录
-    isRemembered: false,
-    // 登录页的免登录存储几天，默认7天
-    loginDay: 7
+    // 是否勾选了登录页的「记住我」（持久化，方便下次登录时默认选中）
+    isRemembered:
+      storageLocal().getItem<{ isRemembered: boolean }>(REMEMBER_KEY)
+        ?.isRemembered ?? false,
+    // 「记住我」的免登录存储几天，默认7天
+    loginDay:
+      storageLocal().getItem<{ loginDay: number }>(REMEMBER_KEY)?.loginDay ?? 7
   }),
   actions: {
     SET_AVATAR(avatar: string) {
@@ -58,9 +67,17 @@ export const useUserStore = defineStore("pure-user", {
     },
     SET_ISREMEMBERED(bool: boolean) {
       this.isRemembered = bool;
+      storageLocal().setItem(REMEMBER_KEY, {
+        isRemembered: bool,
+        loginDay: this.loginDay
+      });
     },
     SET_LOGINDAY(value: number) {
       this.loginDay = Number(value);
+      storageLocal().setItem(REMEMBER_KEY, {
+        isRemembered: this.isRemembered,
+        loginDay: Number(value)
+      });
     },
     async loginByUsername(data: {
       username: string;
@@ -80,7 +97,8 @@ export const useUserStore = defineStore("pure-user", {
               const tokenData = {
                 accessToken: res.data.token,
                 expires: res.data.expiresAt * 1000, // 时间戳（毫秒）
-                refreshToken: res.data.token, // 后端暂无refreshToken，先用token代替
+                refreshToken: res.data.refreshToken,
+                refreshExpires: res.data.refreshExpiresAt * 1000,
                 avatar: res.data.userInfo.avatar || "",
                 username: res.data.userInfo.username,
                 nickname:
@@ -100,35 +118,46 @@ export const useUserStore = defineStore("pure-user", {
           });
       });
     },
-    // 登出：token 未过期时先通知后端加入黑名单（失败不影响本地登出），再清理本地状态
-    logOut() {
-      const tokenData = getToken();
-      if (tokenData && new Date().getTime() < tokenData.expires) {
-        logout().catch(() => {});
+    // 登出：先带 X-Refresh-Token 通知后端拉黑（isNotifyingLogout 防止响应拦截器重复进入形成循环），
+    // 无论成功、失败还是异常，都会继续清理本地状态并跳登录页
+    async logOut() {
+      if (isNotifyingLogout) return;
+      isNotifyingLogout = true;
+      try {
+        const tokenData = getToken();
+        if (tokenData && tokenData.refreshToken) {
+          await logout(tokenData.refreshToken).catch(() => {});
+        }
+      } finally {
+        isNotifyingLogout = false;
+        this.username = "";
+        this.roles = [];
+        this.permissions = [];
+        removeToken();
+        useMultiTagsStoreHook().handleTags("equal", [...routerArrays]);
+        resetRouter();
+        router.push("/login");
       }
-      this.username = "";
-      this.roles = [];
-      this.permissions = [];
-      removeToken();
-      useMultiTagsStoreHook().handleTags("equal", [...routerArrays]);
-      resetRouter();
-      router.push("/login");
     },
     async handRefreshToken(data: {
       accessToken: string;
       refreshToken: string;
       expires: number;
+      refreshExpires?: number;
     }) {
       return new Promise<any>((resolve, reject) => {
-        // 显式携带已过期的token（后端校验签名并在宽限期内换发）
-        refreshToken(data.accessToken)
+        // 使用 refreshToken 换取新的 accessToken/refreshToken
+        refreshToken(data.refreshToken)
           .then(res => {
             if (res.code === 200 && res.data) {
               const oldToken = getToken() || {};
               const tokenData = {
                 ...oldToken,
                 accessToken: res.data.token || data.accessToken,
-                refreshToken: res.data.token || data.refreshToken,
+                refreshToken: res.data.refreshToken || data.refreshToken,
+                refreshExpires: res.data.refreshExpiresAt
+                  ? res.data.refreshExpiresAt * 1000
+                  : data.refreshExpires,
                 expires: res.data.expiresAt
                   ? res.data.expiresAt * 1000
                   : data.expires

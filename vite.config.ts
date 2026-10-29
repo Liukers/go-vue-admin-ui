@@ -56,7 +56,7 @@ export default ({ mode }: ConfigEnv): UserConfigExport => {
       // https://cn.vitejs.dev/guide/build.html#browser-compatibility
       target: "es2015",
       sourcemap: false,
-      // 消除打包大小超过500kb警告
+      // 当前产物较大，临时将单 chunk 告警阈值提到 4MB，优化后应回落
       chunkSizeWarningLimit: 4000,
       rollupOptions: {
         input: {

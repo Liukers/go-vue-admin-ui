@@ -42,6 +42,8 @@ export type UserInfo = {
 export type LoginResult = {
   token: string;
   expiresAt: number;
+  refreshToken: string;
+  refreshExpiresAt: number;
   userInfo: UserInfo;
 };
 
@@ -65,18 +67,25 @@ export const getCaptcha = () => {
   );
 };
 
-// 登出
-export const logout = () => {
-  return http.request<Result<null>>("post", "/v1/system/logout");
+// 登出（需携带 refreshToken，后端会同时拉黑 accessToken 与 refreshToken）
+export const logout = (refreshToken: string) => {
+  return http.request<Result<null>>(
+    "post",
+    "/v1/system/logout",
+    {},
+    {
+      headers: { "X-Refresh-Token": refreshToken }
+    }
+  );
 };
 
-// 刷新token（显式携带已过期的token：后端校验签名并在宽限期内换发）
-export const refreshToken = (expiredToken: string) => {
-  return http.request<Result<{ token: string; expiresAt: number }>>(
+// 刷新token（使用 refreshToken 换取新的 accessToken/refreshToken）
+export const refreshToken = (refreshTokenStr: string) => {
+  return http.request<Result<LoginResult>>(
     "post",
     "/v1/system/refresh-token",
     {},
-    { headers: { Authorization: formatToken(expiredToken) } }
+    { headers: { Authorization: formatToken(refreshTokenStr) } }
   );
 };
 
@@ -333,9 +342,11 @@ export const deleteOperationLog = (id: number) => {
   );
 };
 
-// 清空操作日志
+// 清空操作日志（days=0 清空全部）
 export const clearOperationLog = () => {
-  return http.request<Result<null>>("delete", "/v1/system/operation-logs");
+  return http.request<Result<null>>("delete", "/v1/system/operation-logs", {
+    params: { days: 0 }
+  });
 };
 
 // 获取登录日志列表
@@ -359,7 +370,9 @@ export const deleteLoginLog = (id: number) => {
   return http.request<Result<null>>("delete", `/v1/system/login-logs/${id}`);
 };
 
-// 清空登录日志
+// 清空登录日志（days=0 清空全部）
 export const clearLoginLog = () => {
-  return http.request<Result<null>>("delete", "/v1/system/login-logs");
+  return http.request<Result<null>>("delete", "/v1/system/login-logs", {
+    params: { days: 0 }
+  });
 };

@@ -10,7 +10,7 @@
     "importHelpers": true,
     "experimentalDecorators": true,
     "skipLibCheck": true,
-    
+
     "esModuleInterop": true,
     "isolatedModules": true,
     "allowSyntheticDefaultImports": true,
@@ -19,17 +19,10 @@
     "baseUrl": ".",
     "allowJs": false,
     "resolveJsonModule": true,
-    "lib": [
-      "ESNext",
-      "DOM"
-    ],
+    "lib": ["ESNext", "DOM"],
     "paths": {
-      "@/*": [
-        "src/*"
-      ],
-      "@build/*": [
-        "build/*"
-      ]
+      "@/*": ["src/*"],
+      "@build/*": ["build/*"]
     },
     "types": [
       "node",
@@ -45,11 +38,9 @@
     "src/**/*.tsx",
     "src/**/*.vue",
     "types/*.d.ts",
-    "vite.config.ts"
+    "tests/**/*.ts",
+    "vite.config.ts",
+    "vitest.config.ts"
   ],
-  "exclude": [
-    "dist",
-    "**/*.js",
-    "node_modules"
-  ]
+  "exclude": ["dist", "**/*.js", "node_modules"]
 }

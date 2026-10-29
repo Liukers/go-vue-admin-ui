@@ -92,6 +92,12 @@
               </el-form-item>
             </Motion>
 
+            <Motion :delay="220">
+              <div class="mb-4 flex items-center">
+                <el-checkbox v-model="rememberMe" label="7天免登录" />
+              </div>
+            </Motion>
+
             <Motion :delay="250">
               <el-button
                 class="w-full mt-4!"
@@ -146,6 +152,7 @@ const disabled = ref(false);
 const ruleFormRef = ref<FormInstance>();
 const captchaImg = ref("");
 const loginFormRef = ref<HTMLDivElement | null>(null);
+const rememberMe = ref(useUserStoreHook().isRemembered ?? false);
 
 const { initStorage } = useLayout();
 initStorage();
@@ -155,8 +162,8 @@ dataThemeChange(overallStyle.value);
 const { title } = useNav();
 
 const ruleForm = reactive({
-  username: import.meta.env.DEV ? "admin" : "",
-  password: import.meta.env.DEV ? "admin123" : "",
+  username: "",
+  password: "",
   captchaId: "",
   captchaCode: ""
 });
@@ -188,6 +195,7 @@ const onLogin = async (formEl: FormInstance | undefined) => {
   await formEl.validate(valid => {
     if (valid) {
       loading.value = true;
+      useUserStoreHook().SET_ISREMEMBERED(rememberMe.value);
       useUserStoreHook()
         .loginByUsername({
           username: ruleForm.username,

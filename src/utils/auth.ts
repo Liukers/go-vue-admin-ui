@@ -9,6 +9,8 @@ export interface DataInfo<T> {
   expires: T;
   // 用于调用刷新accessToken的接口时所需的token
   refreshToken: string;
+  // `refreshToken`的过期时间（时间戳）
+  refreshExpires: T;
   // 头像
   avatar?: string;
   // 用户名
@@ -31,9 +33,8 @@ export const TOKEN_KEY = "authorized-token";
  * */
 export const multipleTabsKey = "multiple-tabs";
 
-// 获取`token`
 export function getToken(): DataInfo<number> | null {
-  // 此处与`TOKEN_KEY`相同，此写法解决初始化时`Cookies`中不存在`TOKEN_KEY`报错
+  // cookie 中的 token 解析失败时清理登录态并返回 null
   try {
     const cookieValue = Cookies.get(TOKEN_KEY);
     if (cookieValue) {
@@ -50,30 +51,53 @@ export function getToken(): DataInfo<number> | null {
 /**
  * @description 设置`token`以及一些必要信息并采用无感刷新`token`方案
  * 无感刷新：后端返回`accessToken`（访问接口使用的`token`）、`refreshToken`（用于调用刷新`accessToken`的接口时所需的`token`，`refreshToken`的过期时间（比如30天）应大于`accessToken`的过期时间（比如2小时））、`expires`（`accessToken`的过期时间）
- * 将`accessToken`、`expires`、`refreshToken`这三条信息放在key值为authorized-token的cookie里（过期自动销毁）
- * 将`avatar`、`username`、`nickname`、`roles`、`permissions`、`refreshToken`、`expires`这七条信息放在key值为`user-info`的localStorage里（利用`multipleTabsKey`当浏览器完全关闭后自动销毁）
+ * 将 token 相关信息放入key值为authorized-token的cookie里（过期自动销毁）
+ * 将用户信息等放入key值为`user-info`的localStorage里（利用`multipleTabsKey`当浏览器完全关闭后自动销毁）
  */
 export function setToken(data: DataInfo<number>) {
-  let expires = 0;
   const { accessToken, refreshToken } = data;
   const { isRemembered, loginDay } = useUserStoreHook();
-  expires = data.expires;
-  const cookieString = JSON.stringify({ accessToken, expires, refreshToken });
+  const expires = data.expires;
+  const refreshExpires = data.refreshExpires || 0;
+  const cookieString = JSON.stringify({
+    accessToken,
+    expires,
+    refreshToken,
+    refreshExpires
+  });
 
-  expires > 0
-    ? Cookies.set(TOKEN_KEY, cookieString, {
-        expires: (expires - Date.now()) / 86400000
-      })
-    : Cookies.set(TOKEN_KEY, cookieString);
+  // TOKEN cookie 生命周期：
+  // 未勾选「记住我」→ 随 refreshToken 生命周期（无感刷新方案能工作的前提，必须活到 refreshToken 过期，不能是会话 cookie）
+  // 勾选「记住我」→ 用户选择的 loginDay 天与 refreshToken 生命周期取较短者（refreshExpires 是后端 refreshToken 的真实上限）
+  // refreshExpires 缺失时回退按 accessToken 过期时间
+  const accessExpiresDays =
+    expires > 0 ? (expires - Date.now()) / 86400000 : undefined;
+  const refreshExpiresDays =
+    refreshExpires > 0 ? (refreshExpires - Date.now()) / 86400000 : undefined;
+  let cookieExpires: number | undefined;
+  if (isRemembered && loginDay > 0) {
+    cookieExpires =
+      refreshExpiresDays !== undefined
+        ? Math.min(loginDay, refreshExpiresDays)
+        : loginDay;
+  } else {
+    cookieExpires = refreshExpiresDays ?? accessExpiresDays;
+  }
+
+  Cookies.set(TOKEN_KEY, cookieString, {
+    expires: cookieExpires,
+    sameSite: "Lax"
+  });
 
   Cookies.set(
     multipleTabsKey,
     "true",
     isRemembered
       ? {
-          expires: loginDay
+          expires: loginDay,
+          sameSite: "Lax"
         }
-      : {}
+      : { sameSite: "Lax" }
   );
 
   function setUserKey({ avatar, username, nickname, roles, permissions }) {
@@ -84,6 +108,7 @@ export function setToken(data: DataInfo<number>) {
     useUserStoreHook().SET_PERMS(permissions);
     storageLocal().setItem(USER_KEY, {
       refreshToken,
+      refreshExpires,
       expires,
       avatar,
       username,
