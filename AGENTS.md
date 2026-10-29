@@ -76,5 +76,5 @@ go-vue-admin 的后台管理前端：基于 [pure-admin-thin](https://github.com
 - `tsconfig` 为 `strict: false`，代码里存在历史 `as any`；新代码尽量带类型，但不要为消除旧 `any` 大改无关文件。
 - `vite.config.ts` 的 `chunkSizeWarningLimit: 4000` 是临时阈值（产物偏大），体积优化后应回落到默认值。
 - `package.json` 的 `version: 6.2.0` 继承自 pure-admin-thin，与 git 版本叙事无关，发版时以后端/仓库 tag 为准。
-- 无 i18n，全部中文硬编码；无 CI，提交前需本地跑 `pnpm typecheck && pnpm lint && pnpm test`。
+- 无 i18n，全部中文硬编码；无远程 CI，但已配 husky pre-push 钩子（`.husky/pre-push`，push 前自动跑 `pnpm typecheck && pnpm test`），commit 前如需全面自检再补跑 `pnpm lint`。
 - 单元测试注意：`@pureadmin/utils` 的 `storageLocal` 在 happy-dom 下对**空的** localStorage 会静默不写入（其内部 `isAllEmpty` 误判），测试需先种一个 key（见 `tests/auth.test.ts` 的 `beforeEach`）。

@@ -1,0 +1,5 @@
+#!/bin/sh
+# push 前自动执行质量检查，任一失败则阻止推送
+[ -n "$CI" ] && exit 0
+
+pnpm typecheck && pnpm test
